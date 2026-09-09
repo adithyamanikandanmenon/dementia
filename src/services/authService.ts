@@ -22,7 +22,7 @@ export interface AuthContext {
 export const PASSWORD_REQUIREMENTS = 'Use at least 8 characters, including one letter and one number.';
 const AUTH_REQUEST_TIMEOUT_MS = 15000;
 
-const INTERNAL_AUTH_DOMAIN = 'users.memorycare.app';
+const INTERNAL_AUTH_DOMAIN = 'gnyjnntqyvfamdgcyjce.supabase.co';
 
 export function isValidUsername(username: string): boolean {
   const normalized = username.trim();

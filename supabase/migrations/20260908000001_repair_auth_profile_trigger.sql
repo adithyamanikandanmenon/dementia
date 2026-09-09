@@ -12,8 +12,8 @@ begin
   values (
     new.id,
     case when new.raw_user_meta_data ->> 'requested_role' = 'caregiver'
-      then 'caregiver'
-      else 'patient'
+      then 'caregiver'::public.app_role
+      else 'patient'::public.app_role
     end,
     coalesce(new.raw_user_meta_data ->> 'display_name', new.raw_user_meta_data ->> 'full_name', new.email, ''),
     case when new.raw_user_meta_data ->> 'language' in ('en', 'hi', 'as', 'bn', 'lus', 'mni')
@@ -44,8 +44,8 @@ insert into public.profiles (id, role, display_name, language, role_selected_at)
 select
   u.id,
   case when u.raw_user_meta_data ->> 'requested_role' = 'caregiver'
-    then 'caregiver'
-    else 'patient'
+    then 'caregiver'::public.app_role
+    else 'patient'::public.app_role
   end,
   coalesce(u.raw_user_meta_data ->> 'display_name', u.raw_user_meta_data ->> 'full_name', u.email, ''),
   case when u.raw_user_meta_data ->> 'language' in ('en', 'hi', 'as', 'bn', 'lus', 'mni')

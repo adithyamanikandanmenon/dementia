@@ -25,12 +25,14 @@ const AUTH_REQUEST_TIMEOUT_MS = 15000;
 const INTERNAL_AUTH_DOMAIN = 'users.memorycare.app';
 
 export function isValidUsername(username: string): boolean {
-  return /^[A-Za-z0-9_]{3,32}$/.test(username.trim());
+  const normalized = username.trim();
+  return /^[A-Za-z0-9_]{3,32}$/.test(normalized) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized);
 }
 
-/** Supabase Auth is email-based; this internal identity keeps the UI username-only. */
+/** Supabase Auth is email-based; real emails are preferred, with a legacy internal fallback for local username flows. */
 function authEmailForUsername(username: string): string {
-  return `${username.trim().toLowerCase()}@${INTERNAL_AUTH_DOMAIN}`;
+  const normalized = username.trim().toLowerCase();
+  return normalized.includes('@') ? normalized : `${normalized}@${INTERNAL_AUTH_DOMAIN}`;
 }
 
 export function isValidEmail(email: string): boolean {

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useVoice } from '@/hooks/useVoice';
 import { useToast } from '@/hooks/useToast';
 import { useI18n } from '@/i18n';
@@ -47,4 +48,3 @@ export function VoiceButton({ text, label, compact, className = '' }: VoiceButto
     </button>
   );
 }
-import { useEffect } from 'react';

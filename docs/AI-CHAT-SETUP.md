@@ -17,6 +17,7 @@ No source-code edit or environment variable is needed for a personal key.
 
 - OpenAI: default model `gpt-4o-mini`.
 - Qwen / DashScope: default model `qwen-plus`.
+- OpenRouter: default model `openai/gpt-4o-mini`. OpenRouter model IDs use the `provider/model` format; you can replace this with any model available in your OpenRouter account.
 
 The model field is editable, so a provider model can be changed later without changing code.
 

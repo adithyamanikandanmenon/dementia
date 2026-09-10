@@ -10,6 +10,7 @@ import { Icon } from './Icon';
 const DEFAULT_MODELS: Record<AIProvider, string> = {
   openai: 'gpt-4o-mini',
   qwen: 'qwen-plus',
+  openrouter: 'openai/gpt-4o-mini',
 };
 
 export function AISettingsCard() {
@@ -123,6 +124,7 @@ export function AISettingsCard() {
           <select id="ai-provider" className="select" value={provider} onChange={(event) => updateProvider(event.target.value as AIProvider)}>
             <option value="openai">OpenAI</option>
             <option value="qwen">Qwen / DashScope</option>
+            <option value="openrouter">OpenRouter</option>
           </select>
         </div>
         <div className="field">

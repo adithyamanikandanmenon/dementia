@@ -8,7 +8,7 @@ export type UserRole = 'patient' | 'caregiver';
 export type ThemePreference = 'system' | 'light' | 'dark';
 export type AppRole = UserRole;
 
-export type AIProvider = 'openai' | 'qwen';
+export type AIProvider = 'openai' | 'qwen' | 'openrouter';
 
 export interface AISettings {
   id: 'default';

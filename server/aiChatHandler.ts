@@ -1,5 +1,5 @@
 type ChatRole = 'user' | 'assistant';
-type Provider = 'openai' | 'qwen';
+type Provider = 'openai' | 'qwen' | 'openrouter';
 
 interface IncomingMessage {
   role: ChatRole;
@@ -17,10 +17,11 @@ interface ChatRequestBody {
 const PROVIDER_URLS: Record<Provider, string> = {
   openai: 'https://api.openai.com/v1/chat/completions',
   qwen: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+  openrouter: 'https://openrouter.ai/api/v1/chat/completions',
 };
 
 function isProvider(value: unknown): value is Provider {
-  return value === 'openai' || value === 'qwen';
+  return value === 'openai' || value === 'qwen' || value === 'openrouter';
 }
 
 function cleanMessages(value: unknown): IncomingMessage[] | null {
@@ -47,7 +48,7 @@ export async function handleAIChat(body: unknown): Promise<{ status: number; bod
   const provider = isProvider(input.provider) ? input.provider : 'openai';
   const model = typeof input.model === 'string' && input.model.trim().length > 0
     ? input.model.trim().slice(0, 120)
-    : provider === 'qwen' ? 'qwen-plus' : 'gpt-4o-mini';
+    : provider === 'qwen' ? 'qwen-plus' : provider === 'openrouter' ? 'openai/gpt-4o-mini' : 'gpt-4o-mini';
   const testOnly = input.testOnly === true;
   const messages = testOnly ? [{ role: 'user' as const, content: 'Reply with exactly OK.' }] : cleanMessages(input.messages);
 

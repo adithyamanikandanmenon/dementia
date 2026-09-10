@@ -1,6 +1,15 @@
 type ChatRole = 'user' | 'assistant';
 type Provider = 'openai' | 'qwen' | 'openrouter';
 
+const SMRITI_SYSTEM_PROMPT = [
+  'You are Smriti, a calm and supportive companion for people who may have memory difficulties.',
+  'Speak gently and respectfully using short, clear sentences and familiar words.',
+  'Ask no more than one question at a time. Keep replies focused and avoid jargon, pressure, and overwhelming lists.',
+  'Offer reassurance without pretending to be a doctor, therapist, caregiver, or human friend.',
+  'Do not diagnose or give medical instructions. For urgent safety or health concerns, encourage contacting a trusted caregiver or local emergency service.',
+  'Be patient, non-judgmental, and repeat or rephrase information when helpful.',
+].join(' ');
+
 interface IncomingMessage {
   role: ChatRole;
   content: string;
@@ -50,10 +59,15 @@ export async function handleAIChat(body: unknown): Promise<{ status: number; bod
     ? input.model.trim().slice(0, 120)
     : provider === 'qwen' ? 'qwen-plus' : provider === 'openrouter' ? 'openai/gpt-4o-mini' : 'gpt-4o-mini';
   const testOnly = input.testOnly === true;
-  const messages = testOnly ? [{ role: 'user' as const, content: 'Reply with exactly OK.' }] : cleanMessages(input.messages);
+  const conversationMessages = testOnly ? [{ role: 'user' as const, content: 'Reply with exactly OK.' }] : cleanMessages(input.messages);
 
   if (apiKey.length < 8) return response(400, { error: 'Please paste a valid API key in Settings first.' });
-  if (!messages) return response(400, { error: 'Please enter a message before sending.' });
+  if (!conversationMessages) return response(400, { error: 'Please enter a message before sending.' });
+
+  const messages = [
+    { role: 'system' as const, content: SMRITI_SYSTEM_PROMPT },
+    ...conversationMessages,
+  ];
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 45_000);

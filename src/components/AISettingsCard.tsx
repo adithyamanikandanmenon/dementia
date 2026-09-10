@@ -99,6 +99,8 @@ export function AISettingsCard() {
         Paste your API key below. Your key is used to connect this chatbot to the AI service.
       </div>
 
+      <p className="muted ai-settings-note">Smriti’s calm, gentle speaking style is always active in Chat. It uses short, clear language and one question at a time.</p>
+
       <div className="field">
         <label className="field__label" htmlFor="ai-api-key">API Key</label>
         <div className="ai-key-input">

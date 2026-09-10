@@ -480,3 +480,232 @@ html[data-theme='dark'] .btn--ghost { color: var(--secondary); }
   html[data-theme='system'] .btn--secondary { background: var(--surface-container-high); border-color: var(--border-strong); color: var(--on-secondary-container); }
   html[data-theme='system'] .btn--ghost { color: var(--secondary); }
 }
+
+/* ============================================================
+   Smriti Calm System — final visual layer
+   Uses navy slate for real dark text, slate blue for quiet emphasis,
+   and surface contrast instead of shadows or bright alerts.
+   ============================================================ */
+:root {
+  --mc-forest-950: #172033;
+  --mc-forest-800: #536987;
+  --mc-moss-500: #8093B0;
+  --mc-moss-100: #DCE4EE;
+  --mc-parchment: #F0F3F8;
+  --mc-oat: #B5C1D2;
+  --mc-ink: #1E293B;
+  --mc-muted: #536987;
+  --mc-quiet: #E7EDF5;
+  --mc-line: #B5C1D2;
+  --mc-shadow-sheet: none;
+}
+
+*, *::before, *::after { box-shadow: none !important; }
+body, .app-shell { background: var(--surface); color: var(--on-surface); }
+.app-header, .bottom-nav { background: var(--surface); border-color: var(--border-card); }
+.brand__logo { background: var(--secondary); color: var(--on-secondary); }
+.brand__name, .page h1, .page h2, .page h3, .page h4,
+.page-title, .card-title, .home-intro h1, .screen-intro h1,
+.section-heading h2, .mobile-section__heading h2 { color: var(--secondary-dark); }
+.brand__sub, .page-sub, .muted, .text-muted, .mobile-row__meta,
+.home-intro__meta, .home-intro p, .section-heading span,
+.activity-card p, .activity-card__eyebrow, .progress-level__scale { color: var(--on-surface-variant); }
+.eyebrow, .home-intro__eyebrow { color: var(--secondary); }
+
+.btn--primary {
+  background: var(--primary-container);
+  border-color: var(--secondary);
+  color: var(--secondary-dark);
+}
+.btn--primary:hover, .btn--primary:focus-visible,
+.btn--primary:active { background: var(--secondary); color: var(--surface); }
+.btn--secondary {
+  background: var(--surface-container-lowest);
+  border-color: var(--secondary);
+  color: var(--secondary);
+}
+.btn--secondary:hover, .btn--secondary:focus-visible { background: var(--surface-container); }
+.btn--ghost, .btn--audio, .auth-link { color: var(--secondary); }
+.btn--audio { background: var(--surface-container-lowest); border-color: var(--border-card); }
+.btn--warn { background: var(--surface-container); border-color: var(--secondary); color: var(--on-surface); }
+.btn--danger { background: var(--error); border-color: var(--error); color: var(--surface); }
+.btn:disabled { opacity: 1; background: var(--surface-container); color: #4A607E; border-color: var(--border-card); }
+
+.card, .stat-card, .setting-row, .select-row, .auth-card,
+.input, .select, .field-input { background: var(--surface-container-lowest); color: var(--on-surface); border-color: var(--border-card); }
+.card--tint, .auth-preferences, .auth-help, .home-reassurance,
+.activity-feature, .emergency-note { background: var(--surface-container-low); }
+.card--interactive:hover { background: var(--surface-container); transform: none; }
+.input:focus, .select:focus, .field-input:focus,
+.password-field .input:focus { border-color: var(--secondary); outline: 3px solid var(--secondary); outline-offset: 2px; }
+.password-field__toggle { color: var(--secondary); }
+.password-field__toggle:hover, .password-field__toggle[aria-pressed='true'] { background: var(--surface-container); color: var(--secondary-dark); }
+
+.next-step, .progress-celebration { background: var(--secondary-dark); color: var(--surface); }
+.next-step h2, .progress-celebration h2 { color: var(--surface); }
+.next-step p, .progress-celebration p:last-child { color: #D2DCE8; }
+.next-step__kicker, .progress-celebration .eyebrow { color: #B5C1D2; }
+.next-step .btn { background: var(--primary-container); border-color: var(--primary-container); color: var(--secondary-dark); }
+.next-step .btn:hover { background: var(--surface-container); }
+.next-step__scene { background: var(--surface-container); }
+.next-step__sun { background: #A8B4C4; }
+.next-step__hill--back { background: #B5C1D2; }
+.next-step__hill--front { background: #8093B0; }
+.next-step__path { background: #E7EDF5; }
+.next-step__leaf { background: #536987; }
+.next-step__leaf--two { background: #8093B0; }
+
+.bottom-nav { border-top-color: var(--border-card); }
+.nav-item { color: var(--on-surface-variant); }
+.nav-item[aria-current='page'] { color: var(--secondary-dark); }
+.nav-item[aria-current='page'] .nav-item__icon { background: var(--surface-container); }
+.switch__track { background: var(--surface-container-highest); border-color: var(--secondary); }
+.switch__thumb { background: var(--surface); color: var(--secondary-dark); }
+.switch[aria-checked='true'] .switch__track { background: var(--secondary); border-color: var(--secondary); }
+
+.pill--green, .chip--green, .banner--green, .banner--soft { background: var(--success-container); color: var(--on-success-container); }
+.pill--amber, .chip--amber, .banner--amber { background: var(--surface-container); color: var(--on-surface); }
+.pill--red, .chip--red, .banner--red, .state-banner--error { background: var(--error-container); color: var(--on-error-container); }
+.state-banner--success { background: var(--success-container); color: var(--on-success-container); }
+.medallion--green, .medallion--soft { background: var(--surface-container); color: var(--secondary); }
+.medallion--amber { background: var(--surface-container); color: var(--on-surface); }
+.medallion--red { background: var(--error-container); color: var(--on-error-container); }
+
+.mobile-row__icon, .home-reassurance__icon, .activity-card__art.medallion--green,
+.progress-celebration__icon, .progress-level__badge { background: var(--surface-container); color: var(--secondary); }
+.mobile-row, .mobile-list, .people-list, .activity-card, .metric-row,
+.setting-row, .link-row, .progress-note { border-color: var(--border-card); }
+.day-progress__track, .progress-track, .progress-level__track { background: var(--surface-container-highest); }
+.day-progress__fill, .progress-track__fill, .progress-level__fill { background: var(--secondary); }
+.progress-level__fill { transition: width .35s ease; }
+.progress-stat { background: var(--surface-container-lowest); border-color: var(--border-card); }
+.progress-stat strong, .person-row strong, .person-row__avatar { color: var(--secondary-dark); }
+.person-row__identity img, .person-row__avatar { background: var(--surface-container); }
+.week-dots__day > span { background: var(--surface-container-lowest); border-color: var(--border-card); }
+.week-dots__day.is-active > span { background: var(--secondary); border-color: var(--secondary); color: var(--surface); }
+
+.emergency-hero { background: var(--error-container); color: var(--on-error-container); }
+.emergency-hero h1, .emergency-hero p { color: var(--on-error-container) !important; }
+.emergency-hero__icon { background: var(--error); color: var(--surface); }
+.reminder-card.is-now { background: var(--surface-container-low); border-color: var(--border-card); }
+.reminder-card .eyebrow { color: var(--secondary) !important; }
+.toast { background: var(--secondary-dark); color: var(--surface); }
+.sheet { background: var(--surface); }
+.auth-hero__icon { background: var(--secondary-dark); color: var(--surface); }
+.skeleton { background: var(--surface-container); animation: none; }
+
+html[data-theme='dark'], html[data-theme='dark'] body, html[data-theme='dark'] .app-shell,
+html[data-theme='dark'] .app-header, html[data-theme='dark'] .bottom-nav { background: var(--surface); color: var(--on-surface); }
+html[data-theme='dark'] .card, html[data-theme='dark'] .stat-card,
+html[data-theme='dark'] .input, html[data-theme='dark'] .select,
+html[data-theme='dark'] .field-input, html[data-theme='dark'] .auth-card { background: var(--surface-container-lowest); color: var(--on-surface); border-color: var(--border-card); }
+html[data-theme='dark'] .btn--primary { background: var(--primary-container); color: var(--secondary-dark); }
+html[data-theme='dark'] .btn--secondary { background: var(--surface-container-high); color: var(--on-surface); border-color: var(--border-strong); }
+html[data-theme='dark'] .brand__name, html[data-theme='dark'] .page h1,
+html[data-theme='dark'] .page h2, html[data-theme='dark'] .page h3,
+html[data-theme='dark'] .page h4 { color: var(--on-surface); }
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme='system'] body, html[data-theme='system'] .app-shell,
+  html[data-theme='system'] .app-header, html[data-theme='system'] .bottom-nav { background: var(--surface); color: var(--on-surface); }
+  html[data-theme='system'] .card, html[data-theme='system'] .stat-card,
+  html[data-theme='system'] .input, html[data-theme='system'] .select,
+  html[data-theme='system'] .field-input { background: var(--surface-container-lowest); color: var(--on-surface); border-color: var(--border-card); }
+}
+
+/* Contrast repair for the two light patient-home cards. */
+:root {
+  --home-game-card: #DCE5F1;
+  --home-reminders-card: #FAF8EE;
+  --home-card-heading: #121929;
+  --home-card-body: #3A4861;
+  --home-card-badge: #2A3850;
+  --home-card-button: #1A2536;
+}
+
+.next-step {
+  background: var(--home-game-card);
+  color: var(--home-card-heading);
+  border: 1px solid #8093B0;
+}
+.next-step__kicker,
+.next-step__label {
+  color: var(--home-card-badge);
+}
+.next-step h2 {
+  color: var(--home-card-heading);
+}
+.next-step p {
+  color: var(--home-card-body);
+}
+.next-step .btn {
+  background: #8093B0;
+  border-color: #536987;
+  color: var(--home-card-button);
+}
+.next-step .btn:hover,
+.next-step .btn:focus-visible {
+  background: #536987;
+  border-color: #536987;
+  color: var(--surface);
+}
+
+.empty-state {
+  background: var(--home-reminders-card);
+  color: var(--home-card-heading);
+  border: 1px solid #B5C1D2;
+}
+.empty-state strong,
+.empty-state h2 {
+  color: var(--home-card-heading);
+}
+.empty-state span,
+.empty-state p,
+.empty-state .text-muted {
+  color: var(--home-card-body);
+}
+
+/* Light, System, and Dark are deliberately distinct visual presets. */
+html[data-theme='system'] {
+  color-scheme: light;
+  --surface: #E8EDF3;
+  --surface-bright: #EEF2F6;
+  --surface-container-lowest: #DCE5F1;
+  --surface-container-low: #E1E7EE;
+  --surface-container: #D2DCE8;
+  --surface-container-high: #C8D4E2;
+  --surface-container-highest: #BBC9D9;
+  --on-surface: #121929;
+  --on-surface-variant: #3A4861;
+  --on-surface-muted: #3A4861;
+  --secondary: #5D708D;
+  --secondary-dark: #121929;
+  --on-secondary: #F0F3F8;
+  --secondary-container: #D2DCE8;
+  --secondary-container-soft: #DCE5F1;
+  --on-secondary-container: #121929;
+  --primary-container: #8093B0;
+  --on-primary-container: #1A2536;
+  --primary-fixed: #D2DCE8;
+  --primary-fixed-soft: #DCE5F1;
+  --on-primary-fixed: #121929;
+  --border-card: #9BAABD;
+  --border-strong: #5D708D;
+}
+
+html[data-theme='system'] body,
+html[data-theme='system'] .app-shell,
+html[data-theme='system'] .app-header,
+html[data-theme='system'] .bottom-nav {
+  background: var(--surface);
+  color: var(--on-surface);
+}
+html[data-theme='system'] .card,
+html[data-theme='system'] .stat-card,
+html[data-theme='system'] .input,
+html[data-theme='system'] .select,
+html[data-theme='system'] .field-input {
+  background: var(--surface-container-lowest);
+  color: var(--on-surface);
+  border-color: var(--border-card);
+}

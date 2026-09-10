@@ -75,13 +75,13 @@ export function AuthPage() {
         if (!result.session) throw new Error('Disable Supabase email confirmation for username-only hackathon mode.');
         if (!await refreshAuth()) {
           await signOut().catch(() => undefined);
-          throw new Error('Your account was created, but its MemoryCare profile could not be loaded. Please ask an administrator to check the account setup.');
+          throw new Error('Your account was created, but its Smriti profile could not be loaded. Please ask an administrator to check the account setup.');
         }
       } else {
         await signIn(normalizedUsername, password);
         if (!await refreshAuth()) {
           await signOut().catch(() => undefined);
-          throw new Error('Your password was accepted, but your MemoryCare profile could not be loaded. Please try again or ask an administrator to check the account.');
+          throw new Error('Your password was accepted, but your Smriti profile could not be loaded. Please try again or ask an administrator to check the account.');
         }
       }
       navigate('/', { replace: true });
@@ -126,7 +126,7 @@ export function AuthPage() {
       <main className="page page--flow auth-page">
         <section className="auth-hero text-center" aria-labelledby="auth-title">
           <div className="auth-hero__icon" aria-hidden="true"><Icon name="leaf" size={34} /></div>
-          <p className="eyebrow">MemoryCare</p>
+          <p className="eyebrow">Smriti</p>
           <h1 id="auth-title">{heading}</h1>
           <p className="page-sub">{t('auth.subtitle')}</p>
         </section>

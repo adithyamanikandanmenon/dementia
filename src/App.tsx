@@ -81,10 +81,10 @@ function LandingRoute() {
   return <Welcome />;
 }
 
-function AuthSplash() { return <main className="page page--flow"><div className="card text-center stack" role="status"><span className="medallion medallion--green" style={{ alignSelf: 'center' }}>🌿</span><h1>MemoryCare</h1><p className="text-muted">Preparing your secure space…</p></div></main>; }
+function AuthSplash() { return <main className="page page--flow"><div className="card text-center stack" role="status"><span className="medallion medallion--green" style={{ alignSelf: 'center' }}>🌿</span><h1>Smriti</h1><p className="text-muted">Preparing your secure space…</p></div></main>; }
 
 function RouteLoading() {
-  return <main className="page page--flow"><div className="card text-center stack" role="status" aria-live="polite"><span className="medallion medallion--green" style={{ alignSelf: 'center' }}>🌿</span><h1>MemoryCare</h1><p className="text-muted">Loading this space…</p></div></main>;
+  return <main className="page page--flow"><div className="card text-center stack" role="status" aria-live="polite"><span className="medallion medallion--green" style={{ alignSelf: 'center' }}>🌿</span><h1>Smriti</h1><p className="text-muted">Loading this space…</p></div></main>;
 }
 
 function AppRoutes() {

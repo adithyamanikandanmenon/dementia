@@ -16,7 +16,7 @@ begin
       else 'patient'::public.app_role
     end,
     coalesce(new.raw_user_meta_data ->> 'display_name', new.raw_user_meta_data ->> 'full_name', new.email, ''),
-    case when new.raw_user_meta_data ->> 'language' in ('en', 'hi', 'as', 'bn', 'lus', 'mni')
+    case when new.raw_user_meta_data ->> 'language' in ('en', 'hi', 'as', 'bn')
       then new.raw_user_meta_data ->> 'language'
       else 'en'
     end,
@@ -48,7 +48,7 @@ select
     else 'patient'::public.app_role
   end,
   coalesce(u.raw_user_meta_data ->> 'display_name', u.raw_user_meta_data ->> 'full_name', u.email, ''),
-  case when u.raw_user_meta_data ->> 'language' in ('en', 'hi', 'as', 'bn', 'lus', 'mni')
+  case when u.raw_user_meta_data ->> 'language' in ('en', 'hi', 'as', 'bn')
     then u.raw_user_meta_data ->> 'language'
     else 'en'
   end,

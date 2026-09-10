@@ -8,7 +8,7 @@ set search_path = public, pg_temp
 as $$
 begin
   if auth.uid() is null then raise exception 'Authentication required'; end if;
-  if selected_language not in ('en', 'hi', 'as', 'bn', 'lus', 'mni') then
+  if selected_language not in ('en', 'hi', 'as', 'bn') then
     raise exception 'Unsupported language';
   end if;
   update public.profiles set language = selected_language, updated_at = now() where id = auth.uid();
@@ -28,7 +28,7 @@ begin
     new.id,
     case when new.raw_user_meta_data ->> 'requested_role' = 'caregiver' then 'caregiver'::public.app_role else 'patient'::public.app_role end,
     coalesce(new.raw_user_meta_data ->> 'display_name', new.raw_user_meta_data ->> 'full_name', new.email, ''),
-    case when new.raw_user_meta_data ->> 'language' in ('en', 'hi', 'as', 'bn', 'lus', 'mni') then new.raw_user_meta_data ->> 'language' else 'en' end,
+    case when new.raw_user_meta_data ->> 'language' in ('en', 'hi', 'as', 'bn') then new.raw_user_meta_data ->> 'language' else 'en' end,
     case when new.raw_user_meta_data ->> 'requested_role' in ('patient', 'caregiver') then now() else null end
   )
   on conflict (id) do nothing;

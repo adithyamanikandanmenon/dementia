@@ -21,12 +21,13 @@ const fromBase64url = (value: string) => {
 export async function profiles(): Promise<PatientProfile[]> {
   return storageService.getProfiles();
 }
-export async function createProfile(name: string, details: Pick<PatientProfile, 'dateOfBirth' | 'notes' | 'interests'> = {}): Promise<PatientProfile> {
+export async function createProfile(name: string, details: Pick<PatientProfile, 'dateOfBirth' | 'notes' | 'interests'> & Partial<Pick<PatientProfile, 'profilePhotoUrl'>> = {}): Promise<PatientProfile> {
   const profile: PatientProfile = {
     id: makeId(),
     name: name.trim(),
     createdAt: Date.now(),
     shareWithCaregiver: false,
+    profilePhotoUrl: details.profilePhotoUrl ?? null,
     dateOfBirth: details.dateOfBirth ?? null,
     notes: details.notes?.trim() ?? '',
     interests: details.interests?.trim() ?? '',
@@ -62,7 +63,7 @@ export async function canUsePlatformBiometrics(): Promise<boolean> {
 export async function registerPasskey(userId: string, userName: string): Promise<PasskeyMetadata> {
   if (!await canUsePlatformBiometrics()) throw new Error('A platform passkey authenticator is unavailable.');
   const credential = await navigator.credentials.create({ publicKey: {
-    challenge: bytes(32), rp: { name: 'MemoryCare' },
+    challenge: bytes(32), rp: { name: 'Smriti' },
     user: { id: new TextEncoder().encode(userId), name: userName, displayName: userName },
     pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
     authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'preferred' }, timeout: 60_000,

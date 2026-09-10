@@ -1,4 +1,4 @@
-/* MemoryCare service worker — offline-first app shell.
+/* Smriti service worker — offline-first app shell.
    Static assets are cached on install; navigation falls back to the
    cached shell so the app opens without a network connection. */
 

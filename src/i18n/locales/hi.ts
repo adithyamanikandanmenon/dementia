@@ -436,7 +436,7 @@ const hi: LocaleDict = {
     confirmPassword: 'पासवर्ड की पुष्टि करें',
     passwordRequirements: 'कम से कम 8 अक्षर, जिनमें एक अक्षर और एक अंक हो।',
     pleaseWait: 'कृपया प्रतीक्षा करें…',
-    tryMemoryCare: 'या मेमोरीकेयर आज़माएँ',
+    tryMemoryCare: 'या Smriti आज़माएँ',
     guest: 'अतिथि के रूप में जारी रखें',
     openingGuest: 'अतिथि मोड खोला जा रहा है…',
     guestBody: 'बिना खाते के मेमोरीकेयर आज़माएँ। आपका डेमो डेटा इसी उपकरण पर रहेगा।',

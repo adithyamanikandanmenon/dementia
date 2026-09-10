@@ -43,7 +43,7 @@ export class AppErrorBoundary extends Component<Props, State> {
         <section className="card stack-lg text-center" role="alert">
           <span className="medallion medallion--green" style={{ alignSelf: 'center' }}>🌿</span>
           <h1>Something went wrong</h1>
-          <p className="page-sub">MemoryCare could not finish loading this screen.</p>
+          <p className="page-sub">Smriti could not finish loading this screen.</p>
           <div className="row" style={{ justifyContent: 'center' }}>
             <Button variant="primary" onClick={this.retry}>Try again</Button>
             <Button variant="secondary" onClick={this.goHome}>Go home</Button>

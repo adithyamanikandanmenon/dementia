@@ -11,8 +11,6 @@ const BCP47: Record<LanguageCode, string> = {
   hi: 'hi-IN',
   as: 'as-IN',
   bn: 'bn-IN',
-  lus: 'en-IN', // Mizo TTS is rarely available; fall back to English voice
-  mni: 'en-IN', // Meitei TTS rarely available; fall back to English voice
 };
 
 export function isVoiceSupported(): boolean {

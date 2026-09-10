@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "MemoryCare — AI-based cognitive gaming and memory assistance platform for elderly users (SIH 2026, Team SIGMA SYNAPSE)",
+  "description": "Smriti — AI-based cognitive gaming and memory assistance platform for elderly users (SIH 2026, Team SIGMA SYNAPSE)",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

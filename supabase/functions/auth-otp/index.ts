@@ -12,7 +12,7 @@ const json = (body: Record<string, unknown>, status = 200) =>
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const languageCodes = ['en', 'hi', 'as', 'bn', 'lus', 'mni'];
+const languageCodes = ['en', 'hi', 'as', 'bn'];
 
 type Flow = 'signup' | 'login';
 

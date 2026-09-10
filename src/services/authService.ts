@@ -60,13 +60,13 @@ export function authErrorMessage(error: unknown, fallback: string): string {
     return 'Too many attempts. Please wait a few minutes and try again.';
   }
   if (normalized.includes('supabase is not configured') || normalized.includes('missing supabase') || normalized.includes('configuration')) {
-    return 'MemoryCare sign-in is not configured on this deployment. Guest Mode is still available.';
+    return 'Smriti sign-in is not configured on this deployment. Guest Mode is still available.';
   }
   if (normalized.includes('email signups are disabled') || normalized.includes('signup is disabled')) {
     return 'New account creation is currently disabled. Ask an administrator to create your account.';
   }
   if (normalized.includes('profile') || normalized.includes('schema cache') || normalized.includes('database error')) {
-    return 'Your password was accepted, but your MemoryCare profile could not be loaded. Please try again, or ask an administrator to check your account.';
+    return 'Your password was accepted, but your Smriti profile could not be loaded. Please try again, or ask an administrator to check your account.';
   }
   if (normalized.includes('timeout') || normalized.includes('timed out')) {
     return 'Sign-in took too long. Check your connection and try again.';

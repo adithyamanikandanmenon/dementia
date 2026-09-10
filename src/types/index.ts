@@ -1,8 +1,8 @@
 // ============================================================
-// MemoryCare — Shared Types
+// Smriti — Shared Types
 // ============================================================
 
-export type LanguageCode = 'en' | 'hi' | 'as' | 'bn' | 'lus' | 'mni';
+export type LanguageCode = 'en' | 'hi' | 'as' | 'bn';
 
 export type UserRole = 'patient' | 'caregiver';
 export type ThemePreference = 'system' | 'light' | 'dark';
@@ -37,6 +37,7 @@ export interface ActiveProfile {
   patientName: string;
   caregiverName: string;
   role: UserRole;
+  avatarUrl?: string | null;
 }
 
 export type GameType = 'picture-pairs' | 'pattern-recall' | 'daily-routine' | 'who-is-this-person';
@@ -89,6 +90,7 @@ export interface PatientProfile {
   name: string;
   createdAt: number;
   shareWithCaregiver: boolean;
+  profilePhotoUrl?: string | null;
   dateOfBirth?: string | null;
   notes?: string;
   interests?: string;

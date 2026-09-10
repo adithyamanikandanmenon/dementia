@@ -22,16 +22,49 @@ export async function createPatient(patient: NewPatient) {
   return data as PatientRecord;
 }
 
-export async function updatePatient(patientId: string, changes: Pick<PatientRecord, 'name' | 'date_of_birth' | 'notes' | 'interests'>) {
+export async function updatePatient(patientId: string, changes: Pick<PatientRecord, 'name' | 'date_of_birth' | 'notes' | 'interests' | 'profile_photo_path'>) {
   if (!supabase) throw new Error('Supabase is not configured.');
   const { data, error } = await supabase.from('patients').update({
     name: changes.name.trim(),
     date_of_birth: changes.date_of_birth ?? null,
     notes: changes.notes ?? null,
     interests: changes.interests ?? null,
+    profile_photo_path: changes.profile_photo_path ?? null,
   }).eq('id', patientId).select().single();
   if (error) throw error;
   return data as PatientRecord;
+}
+
+const mediaBucket = 'patient-media';
+
+async function optimisePhoto(file: File): Promise<File> {
+  if (!file.type.startsWith('image/') || file.size <= 900_000) return file;
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 960 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext('2d')?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.82));
+  return blob ? new File([blob], `${file.name.replace(/\.[^.]+$/, '')}.jpg`, { type: 'image/jpeg' }) : file;
+}
+
+export async function uploadPatientPhoto(patientId: string, file: File): Promise<string> {
+  if (!supabase) throw new Error('Supabase is not configured.');
+  const uploadFile = await optimisePhoto(file);
+  const safeName = uploadFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const path = `${patientId}/profile/${crypto.randomUUID()}-${safeName}`;
+  const { error } = await supabase.storage.from(mediaBucket).upload(path, uploadFile, { upsert: false, contentType: uploadFile.type });
+  if (error) throw error;
+  return path;
+}
+
+export async function patientPhotoUrl(path: string | null): Promise<string | null> {
+  if (!supabase || !path) return null;
+  const { data, error } = await supabase.storage.from(mediaBucket).createSignedUrl(path, 3600);
+  if (error) throw error;
+  return data.signedUrl;
 }
 
 /** Creates the signed-in patient's row only when the RLS-protected row is missing. */

@@ -1,5 +1,5 @@
 // ============================================================
-// MemoryCare — i18n
+// Smriti — i18n
 // Nested translation dictionaries with English fallback.
 // Usage:  const { t } = useI18n();  t('home.startGame')
 // ============================================================
@@ -17,8 +17,6 @@ import en from './locales/en';
 import hi from './locales/hi';
 import bn from './locales/bn';
 import as from './locales/as';
-import lus from './locales/lus';
-import mni from './locales/mni';
 
 export type LocaleDict = { [key: string]: string | LocaleDict };
 
@@ -27,8 +25,6 @@ const LOCALES: Record<LanguageCode, LocaleDict> = {
   hi,
   bn,
   as,
-  lus,
-  mni,
 };
 
 export interface LanguageMeta {
@@ -44,8 +40,6 @@ export const LANGUAGES: LanguageMeta[] = [
   { code: 'hi', english: 'Hindi', native: 'हिन्दी', sample: 'नमस्ते', complete: true },
   { code: 'as', english: 'Assamese', native: 'অসমীয়া', sample: 'নমস্কাৰ', complete: false },
   { code: 'bn', english: 'Bengali', native: 'বাংলা', sample: 'নমস্কার', complete: false },
-  { code: 'lus', english: 'Mizo', native: 'Mizo ṭawng', sample: 'Chibai', complete: false },
-  { code: 'mni', english: 'Meitei', native: 'ꯃꯤꯇꯩꯂꯣꯟ', sample: 'ꯈꯨꯔꯨꯝꯖꯔꯤ', complete: false },
 ];
 
 function lookup(dict: LocaleDict, path: string[]): string | undefined {

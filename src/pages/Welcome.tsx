@@ -94,7 +94,7 @@ export function Welcome() {
               <Button type="button" size="lg" block variant="secondary" onClick={() => void startGuestMode()} disabled={guestLoading}>
                 {guestLoading ? 'Opening Guest Mode…' : 'Continue as Guest'}
               </Button>
-              <p className="muted text-center">Try MemoryCare without creating an account. Your demo data stays on this device.</p>
+              <p className="muted text-center">Try Smriti without creating an account. Your demo data stays on this device.</p>
             </div>
           </div>
         </main>
@@ -145,7 +145,7 @@ export function Welcome() {
           <Button type="button" size="lg" block variant="secondary" onClick={() => void startGuestMode()} disabled={guestLoading}>
             {guestLoading ? 'Opening Guest Mode…' : 'Continue as Guest'}
           </Button>
-          <p className="muted text-center">Try MemoryCare without creating an account. Your demo data stays on this device.</p>
+              <p className="muted text-center">Try Smriti without creating an account. Your demo data stays on this device.</p>
         </div>
 
         {/* Helpful settings */}

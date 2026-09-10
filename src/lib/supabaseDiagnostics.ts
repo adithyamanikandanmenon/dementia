@@ -14,7 +14,7 @@ export async function inspectSupabase(): Promise<SupabaseDiagnostics> {
   };
 
   if (import.meta.env.DEV) {
-    console.info('[MemoryCare] Supabase diagnostics', result);
+    console.info('[Smriti] Supabase diagnostics', result);
   }
   return result;
 }

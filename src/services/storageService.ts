@@ -5,10 +5,10 @@
 // Falls back to localStorage if IndexedDB is unavailable.
 // ============================================================
 
-import type { EmergencyContact, FamilyMember, GameSession, MoodEntry, PatientProfile, PersonMemory, Reminder } from '@/types';
+import type { AISettings, ChatConversation, EmergencyContact, FamilyMember, GameSession, MoodEntry, PatientProfile, PersonMemory, Reminder } from '@/types';
 
 const DB_NAME = 'memorycare-db';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const STORE_SESSIONS = 'gameSessions';
 const STORE_REMINDERS = 'reminders';
 const STORE_PROFILES = 'profiles';
@@ -16,6 +16,8 @@ const STORE_FAMILY = 'familyMembers';
 const STORE_EMERGENCY = 'emergencyContacts';
 const STORE_MOODS = 'moods';
 const STORE_PEOPLE = 'personMemories';
+const STORE_AI_SETTINGS = 'aiSettings';
+const STORE_CHATS = 'chatConversations';
 
 let dbPromise: Promise<IDBDatabase | null> | null = null;
 
@@ -37,7 +39,7 @@ function openDB(): Promise<IDBDatabase | null> {
         if (!db.objectStoreNames.contains(STORE_REMINDERS)) {
           db.createObjectStore(STORE_REMINDERS, { keyPath: 'id' });
         }
-        [STORE_PROFILES, STORE_FAMILY, STORE_EMERGENCY, STORE_MOODS, STORE_PEOPLE].forEach((store) => {
+        [STORE_PROFILES, STORE_FAMILY, STORE_EMERGENCY, STORE_MOODS, STORE_PEOPLE, STORE_AI_SETTINGS, STORE_CHATS].forEach((store) => {
           if (!db.objectStoreNames.contains(store)) db.createObjectStore(store, { keyPath: 'id' });
         });
       };
@@ -171,6 +173,17 @@ export const storageService = {
   getPersonMemories: () => idbGetAll<PersonMemory>(STORE_PEOPLE, 'mc:person-memories'),
   putPersonMemory: (v: PersonMemory) => idbPut<PersonMemory>(STORE_PEOPLE, 'mc:person-memories', v),
   deletePersonMemory: (id: string) => idbDelete(STORE_PEOPLE, 'mc:person-memories', id),
+
+  // AI credentials stay in IndexedDB, never in the lightweight settings/localStorage bucket.
+  getAISettings: async (): Promise<AISettings | null> => {
+    const values = await idbGetAll<AISettings>(STORE_AI_SETTINGS, 'mc:ai-settings');
+    return values.find((value) => value.id === 'default') ?? null;
+  },
+  putAISettings: (value: AISettings) => idbPut<AISettings>(STORE_AI_SETTINGS, 'mc:ai-settings', value),
+  clearAISettings: () => idbDelete(STORE_AI_SETTINGS, 'mc:ai-settings', 'default'),
+  getChatConversations: () => idbGetAll<ChatConversation>(STORE_CHATS, 'mc:chat-conversations'),
+  putChatConversation: (value: ChatConversation) => idbPut<ChatConversation>(STORE_CHATS, 'mc:chat-conversations', value),
+  deleteChatConversation: (id: string) => idbDelete(STORE_CHATS, 'mc:chat-conversations', id),
 
   // Lightweight KV
   get: lsGet,

@@ -14,6 +14,7 @@ import { Sheet } from '@/components/Sheet';
 import { Icon } from '@/components/Icon';
 import { authErrorMessage } from '@/services/authService';
 import { ConfirmSheet } from '@/components/ConfirmSheet';
+import { AISettingsCard } from '@/components/AISettingsCard';
 import type { LanguageCode, ThemePreference } from '@/types';
 
 export function Settings() {
@@ -155,6 +156,8 @@ export function Settings() {
               {t('settings.testVoice')}
             </Button>
           </Card>
+
+          <AISettingsCard />
 
           {settings.guestMode && <Card className="guest-settings-card" variant="tint" padLg>
             <div className="row" style={{ gap: '0.6rem', marginBottom: '0.5rem' }}>

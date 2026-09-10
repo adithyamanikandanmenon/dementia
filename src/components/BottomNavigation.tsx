@@ -14,6 +14,7 @@ const PATIENT_NAV: NavDef[] = [
   { to: '/games', labelKey: 'nav.activities', icon: 'games' },
   { to: '/people', labelKey: 'nav.people', icon: 'users' },
   { to: '/reminders', labelKey: 'nav.reminders', icon: 'bell' },
+  { to: '/chat', labelKey: 'nav.chat', icon: 'sparkle' },
   { to: '/settings', labelKey: 'nav.more', icon: 'settings' },
 ];
 

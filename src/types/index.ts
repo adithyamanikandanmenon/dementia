@@ -8,6 +8,33 @@ export type UserRole = 'patient' | 'caregiver';
 export type ThemePreference = 'system' | 'light' | 'dark';
 export type AppRole = UserRole;
 
+export type AIProvider = 'openai' | 'qwen';
+
+export interface AISettings {
+  id: 'default';
+  provider: AIProvider;
+  model: string;
+  apiKey: string;
+  updatedAt: number;
+}
+
+export type ChatMessageRole = 'user' | 'assistant';
+
+export interface ChatMessage {
+  id: string;
+  role: ChatMessageRole;
+  content: string;
+  createdAt: number;
+}
+
+export interface ChatConversation {
+  id: string;
+  title: string;
+  createdAt: number;
+  updatedAt: number;
+  messages: ChatMessage[];
+}
+
 export interface PatientRecord {
   id: string;
   auth_user_id?: string | null;

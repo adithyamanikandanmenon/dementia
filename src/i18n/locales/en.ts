@@ -28,6 +28,7 @@ const en = {
     activities: 'Activities',
     people: 'People',
     reminders: 'Reminders',
+    chat: 'Chat',
     progress: 'Progress',
     settings: 'Settings',
     more: 'More',

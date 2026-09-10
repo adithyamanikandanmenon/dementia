@@ -69,6 +69,7 @@ export async function handleAIChat(body: unknown): Promise<{ status: number; bod
         messages,
         temperature: 0.4,
         max_tokens: testOnly ? 4 : 900,
+        ...(provider === 'openrouter' ? { reasoning: { effort: 'none' } } : {}),
       }),
       signal: controller.signal,
     });

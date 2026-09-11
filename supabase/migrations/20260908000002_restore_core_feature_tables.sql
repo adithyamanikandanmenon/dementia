@@ -25,6 +25,7 @@ create table if not exists public.person_memories (
   relationship text not null default 'other',
   nickname text,
   photo_path text,
+  photo_paths text[] not null default '{}',
   notes text,
   voice_recording_path text,
   created_at timestamptz not null default now(),

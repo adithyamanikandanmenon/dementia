@@ -318,6 +318,11 @@ html[data-theme='dark'] .home-reassurance { background: #18382b; border-color: #
 .person-row { display: grid; gap: .75rem; padding: 1rem 0; border-bottom: 1px solid var(--mc-line); }
 .person-row__identity { display: flex; align-items: center; gap: .8rem; }
 .person-row__identity img, .person-row__avatar { display: grid; place-items: center; flex: 0 0 3.6rem; width: 3.6rem; height: 3.6rem; border-radius: 50%; object-fit: cover; background: var(--mc-moss-100); color: var(--mc-forest-950); font-size: 1.35rem; font-weight: 800; }
+.person-row__photos { display: flex; flex-wrap: wrap; gap: .55rem; }
+.person-row__photos img { width: 4.75rem; height: 4.75rem; border: 1px solid var(--mc-line); border-radius: 14px; object-fit: cover; background: var(--mc-quiet); }
+.person-row__photos--sheet { margin-top: .6rem; }
+.person-row__photos--sheet img { width: 4rem; height: 4rem; }
+.people-limit-note { margin-top: -.5rem; }
 .person-row strong { color: var(--mc-forest-950); font-size: 1rem; }
 .person-row p { margin-top: .2rem; font-size: .78rem; }
 .person-row__actions { display: flex; justify-content: flex-end; gap: .35rem; }

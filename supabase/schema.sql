@@ -57,6 +57,7 @@ create table public.person_memories (
   relationship public.person_relationship not null default 'other',
   nickname text,
   photo_path text,
+  photo_paths text[] not null default '{}',
   notes text,
   voice_recording_path text,
   created_at timestamptz not null default now(),

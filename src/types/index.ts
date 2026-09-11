@@ -54,6 +54,7 @@ export interface PersonMemory {
   relationship: PersonRelationship;
   nickname?: string | null;
   photo_path?: string | null;
+  photo_paths?: string[] | null;
   notes?: string | null;
   voice_recording_path?: string | null;
 }

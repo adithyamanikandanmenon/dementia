@@ -8,7 +8,7 @@ export const MAX_FAMILY_MEMBERS = 5;
 export const MAX_PERSON_PHOTOS = 3;
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 
-function photoPathsFor(person: Partial<PersonMemory>): string[] {
+export function personPhotoPaths(person: Partial<PersonMemory>): string[] {
   const paths = Array.isArray(person.photo_paths)
     ? person.photo_paths.filter((path): path is string => typeof path === 'string' && path.length > 0)
     : [];
@@ -17,7 +17,7 @@ function photoPathsFor(person: Partial<PersonMemory>): string[] {
 }
 
 function normalizePerson(person: PersonMemory): PersonMemory {
-  const photo_paths = photoPathsFor(person);
+  const photo_paths = personPhotoPaths(person);
   return { ...person, photo_path: photo_paths[0] ?? null, photo_paths };
 }
 
@@ -51,7 +51,7 @@ export async function savePerson(person: Partial<PersonMemory> & Pick<PersonMemo
     if (!photo.type.startsWith('image/')) throw new Error('Please choose image files only.');
     if (photo.size > MAX_PHOTO_BYTES) throw new Error('Each photo must be 8 MB or smaller.');
   }
-  const previousPhotoPaths = photoPathsFor(person);
+  const previousPhotoPaths = personPhotoPaths(person);
   if (useGuestStorage || isGuestPatientId(person.patient_id)) {
     const photo_paths = selectedPhotos.length > 0 ? await Promise.all(selectedPhotos.map(fileToDataUrl)) : previousPhotoPaths;
     const localPerson: PersonMemory = {

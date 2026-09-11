@@ -3,15 +3,27 @@ import { useI18n } from '@/i18n';
 import { useVoice } from '@/hooks/useVoice';
 import { useSettings } from '@/hooks/useSettings';
 import { pairsConfig } from '@/services/gameService';
+import { listPeople, personPhotoPaths, personPhotoUrl } from '@/services/peopleService';
 import { OBJECT_POOL, objectLabel } from '@/data/games';
+import { isSupabaseConfigured } from '@/lib/supabase';
+import { GUEST_PATIENT_ID } from '@/services/guestService';
+import { storageService } from '@/services/storageService';
 import { shuffle, uid, type GameOutcome } from '@/utils/helpers';
 import { Icon } from '@/components/Icon';
 import { Button } from '@/components/Button';
 
+interface FamiliarPhoto {
+  id: string;
+  label: string;
+  url: string;
+}
+
 interface Card {
   id: string;
-  objIndex: number;
-  emoji: string;
+  matchKey: string;
+  emoji?: string;
+  imageUrl?: string;
+  label: string;
   matched: boolean;
   open: boolean;
   justMatched: boolean;
@@ -22,26 +34,85 @@ interface Props {
   onComplete: (o: GameOutcome) => void;
 }
 
+const PHOTO_CURSOR_KEY = 'mc:picture-pairs-photo-cursor';
+
 export function PicturePairs({ level, onComplete }: Props) {
   const { t } = useI18n();
   const { settings } = useSettings();
   const { say, enabled } = useVoice();
   const cfg = useMemo(() => pairsConfig(level), [level]);
+  const patientId = settings.guestMode ? GUEST_PATIENT_ID : settings.activePatientId;
+  const localStorageMode = settings.guestMode || !isSupabaseConfigured;
 
-  const [cards, setCards] = useState<Card[]>(() => buildDeck(cfg.pairs));
-  const [phase, setPhase] = useState<'preview' | 'play' | 'done'>('preview');
+  const [cards, setCards] = useState<Card[]>([]);
+  const [phase, setPhase] = useState<'loading' | 'preview' | 'play' | 'done'>('loading');
   const [openIds, setOpenIds] = useState<string[]>([]);
   const [taps, setTaps] = useState(0);
   const [comparisons, setComparisons] = useState(0);
   const [paused, setPaused] = useState(false);
   const [announce, setAnnounce] = useState('');
+  const [usingFamiliarPhotos, setUsingFamiliarPhotos] = useState(false);
   const startRef = useRef(Date.now());
   const lockRef = useRef(false);
 
   const matchedPairs = cards.filter((c) => c.matched).length / 2;
 
+  // Load every saved photo. A different slice is selected on each new round so
+  // all uploaded photos rotate through the game instead of always using photo 1.
+  useEffect(() => {
+    let live = true;
+    setPhase('loading');
+    setCards([]);
+    setOpenIds([]);
+    setUsingFamiliarPhotos(false);
+
+    const loadDeck = async () => {
+      const familiarPhotos: FamiliarPhoto[] = [];
+      if (patientId) {
+        try {
+          const people = await listPeople(patientId, localStorageMode);
+          for (const person of people) {
+            const paths = personPhotoPaths(person);
+            const resolved = await Promise.all(
+              paths.map(async (path, index) => {
+                try {
+                  const url = await personPhotoUrl(path, localStorageMode);
+                  return url
+                    ? { id: `${person.id}-${index}-${path}`, label: person.name, url }
+                    : null;
+                } catch {
+                  return null;
+                }
+              }),
+            );
+            familiarPhotos.push(
+              ...resolved.filter((photo): photo is FamiliarPhoto => Boolean(photo)),
+            );
+          }
+        } catch {
+          // Keep the game playable if the cloud is temporarily unavailable.
+        }
+      }
+
+      if (!live) return;
+      if (familiarPhotos.length > 0) {
+        setCards(buildPhotoDeck(familiarPhotos, cfg.pairs, patientId ?? 'default'));
+        setUsingFamiliarPhotos(true);
+      } else {
+        setCards(buildObjectDeck(cfg.pairs, settings.language));
+      }
+      setPhase('preview');
+    };
+
+    void loadDeck();
+    return () => {
+      live = false;
+    };
+  }, [cfg.pairs, localStorageMode, patientId, settings.language]);
+
   // Preview: reveal all briefly, then flip down and begin play.
   useEffect(() => {
+    if (phase !== 'preview' || cards.length === 0) return;
     setCards((cs) => cs.map((c) => ({ ...c, open: true })));
     const id = window.setTimeout(() => {
       setCards((cs) => cs.map((c) => ({ ...c, open: false })));
@@ -49,8 +120,7 @@ export function PicturePairs({ level, onComplete }: Props) {
       if (enabled) say(t('pairs.instruction'));
     }, cfg.previewMs);
     return () => window.clearTimeout(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [cards.length, cfg.previewMs, enabled, phase, say, t]);
 
   const finish = useCallback(
     (comps: number) => {
@@ -89,7 +159,7 @@ export function PicturePairs({ level, onComplete }: Props) {
     if (nextOpen.length === 2) {
       lockRef.current = true;
       const [a, b] = nextOpen.map((id) => cards.find((c) => c.id === id)!);
-      const isMatch = a.objIndex === b.objIndex;
+      const isMatch = a.matchKey === b.matchKey;
       const comps = comparisons + 1;
       setComparisons(comps);
 
@@ -150,7 +220,7 @@ export function PicturePairs({ level, onComplete }: Props) {
           className="game-stat"
           onClick={() => setPaused(true)}
           aria-label={t('pairs.pause')}
-          disabled={phase === 'done'}
+          disabled={phase === 'done' || phase === 'loading'}
         >
           <div className="game-stat__value" aria-hidden="true">
             <Icon name="pause" size={22} />
@@ -162,15 +232,21 @@ export function PicturePairs({ level, onComplete }: Props) {
       {/* Hint banner */}
       <div className="banner banner--amber">
         <Icon name="sparkle" size={22} />
-        <span>{phase === 'preview' ? t('pairs.preview') : t('pairs.hint')}</span>
+        <span>
+          {phase === 'loading'
+            ? t('pairs.loading')
+            : phase === 'preview'
+              ? t('pairs.preview')
+              : usingFamiliarPhotos
+                ? t('pairs.familiarHint')
+                : t('pairs.hint')}
+        </span>
       </div>
 
       {/* Board */}
       <div className={`pairs-board ${wide ? 'pairs-board--wide' : ''}`}>
         {cards.map((card) => {
-          const obj = OBJECT_POOL[card.objIndex];
           const shown = card.open || card.matched;
-          const label = objectLabel(obj, settings.language);
           return (
             <button
               key={card.id}
@@ -187,7 +263,7 @@ export function PicturePairs({ level, onComplete }: Props) {
               disabled={phase !== 'play' || card.matched || paused}
               aria-label={
                 shown
-                  ? `${label}${card.matched ? ', ' + t('pairs.matched') : ''}`
+                  ? `${card.label}${card.matched ? ', ' + t('pairs.matched') : ''}`
                   : t('pairs.tapToTurn')
               }
             >
@@ -200,10 +276,16 @@ export function PicturePairs({ level, onComplete }: Props) {
                 <span className="pair-tag pair-tag--open">{t('pairs.open')}</span>
               )}
               <span className="pair-card__face" aria-hidden="true">
-                {shown ? obj.emoji : <span className="pair-card__q">❓</span>}
+                {shown && card.imageUrl ? (
+                  <img className="pair-card__image" src={card.imageUrl} alt="" />
+                ) : shown && card.emoji ? (
+                  card.emoji
+                ) : (
+                  <span className="pair-card__q">❓</span>
+                )}
               </span>
               <span className="pair-card__label">
-                {shown ? label : t('pairs.tapToTurn')}
+                {shown ? card.label : t('pairs.tapToTurn')}
               </span>
             </button>
           );
@@ -232,15 +314,41 @@ export function PicturePairs({ level, onComplete }: Props) {
   );
 }
 
-function buildDeck(pairs: number): Card[] {
-  const chosen = shuffle(OBJECT_POOL.map((_, i) => i)).slice(0, pairs);
+function buildPhotoDeck(photos: FamiliarPhoto[], pairs: number, patientId: string): Card[] {
+  const cursorKey = `${PHOTO_CURSOR_KEY}:${patientId}`;
+  const cursor = storageService.get<number>(cursorKey, 0);
+  const count = Math.min(pairs, photos.length);
+  const chosen = Array.from({ length: count }, (_, index) => photos[(cursor + index) % photos.length]);
+  storageService.set(cursorKey, (cursor + count) % photos.length);
+
+  const deck: Card[] = [];
+  for (const photo of chosen) {
+    for (let copy = 0; copy < 2; copy += 1) {
+      deck.push({
+        id: uid('photo_'),
+        matchKey: photo.id,
+        imageUrl: photo.url,
+        label: photo.label,
+        matched: false,
+        open: false,
+        justMatched: false,
+      });
+    }
+  }
+  return shuffle(deck);
+}
+
+function buildObjectDeck(pairs: number, language: Parameters<typeof objectLabel>[1]): Card[] {
+  const chosen = shuffle(OBJECT_POOL.map((_, index) => index)).slice(0, pairs);
   const deck: Card[] = [];
   for (const objIndex of chosen) {
-    for (let k = 0; k < 2; k++) {
+    const obj = OBJECT_POOL[objIndex];
+    for (let copy = 0; copy < 2; copy += 1) {
       deck.push({
         id: uid('c_'),
-        objIndex,
-        emoji: OBJECT_POOL[objIndex].emoji,
+        matchKey: `object-${objIndex}`,
+        emoji: obj.emoji,
+        label: objectLabel(obj, language),
         matched: false,
         open: false,
         justMatched: false,

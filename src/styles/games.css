@@ -63,6 +63,12 @@
   font-size: clamp(2.4rem, 12vw, 3.5rem);
   line-height: 1;
 }
+.pair-card__image {
+  width: clamp(4.2rem, 20vw, 7.5rem);
+  height: clamp(4.2rem, 20vw, 7.5rem);
+  object-fit: cover;
+  border-radius: var(--radius-md);
+}
 .pair-card__q {
   color: var(--on-surface-muted);
 }

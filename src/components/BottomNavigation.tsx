@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useI18n } from '@/i18n';
 import { Icon, type IconName } from './Icon';
+import { AI_CHAT_ENABLED } from '@/config/features';
 
 interface NavDef {
   to: string;
@@ -28,7 +29,9 @@ const CAREGIVER_NAV: NavDef[] = [
 
 export function BottomNavigation({ role }: { role: 'patient' | 'caregiver' }) {
   const { t } = useI18n();
-  const items = role === 'patient' ? PATIENT_NAV : CAREGIVER_NAV;
+  const items = (role === 'patient' ? PATIENT_NAV : CAREGIVER_NAV).filter(
+    (item) => AI_CHAT_ENABLED || item.to !== '/chat',
+  );
 
   return (
     <nav className="bottom-nav" aria-label="Primary">

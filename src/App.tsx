@@ -25,6 +25,7 @@ import { ChooseRole } from '@/pages/ChooseRole';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { AuthPage } from '@/pages/AuthPage';
 import { Chat } from '@/pages/Chat';
+import { AI_CHAT_ENABLED } from '@/config/features';
 
 const ResetPassword = lazy(() => import('@/pages/ResetPassword').then((module) => ({ default: module.ResetPassword })));
 const AdminErrors = lazy(() => import('@/pages/AdminErrors').then((module) => ({ default: module.AdminErrors })));
@@ -114,7 +115,7 @@ function AppRoutes() {
         <Route path="/emergency" element={<Emergency />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/settings" element={<Settings />} />
-        <Route path="/chat" element={<Chat />} />
+        <Route path="/chat" element={AI_CHAT_ENABLED ? <Chat /> : <Navigate to="/home" replace />} />
         <Route path="/profiles" element={<Profiles />} />
         <Route path="/people" element={<People />} />
       </Route>

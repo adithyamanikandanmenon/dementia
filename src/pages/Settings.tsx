@@ -20,6 +20,13 @@ import type { LanguageCode, ThemePreference } from '@/types';
 import { approveCaregiverInvite, listPatientCaregiverLinks, revokeCaregiverAccess, setPatientSharing } from '@/services/sharingService';
 import type { CaregiverLink } from '@/types';
 
+function sharingErrorMessage(error: unknown, fallback: string) {
+  if (error && typeof error === 'object' && 'message' in error && typeof (error as { message?: unknown }).message === 'string') {
+    return String((error as { message: string }).message);
+  }
+  return error instanceof Error ? error.message : fallback;
+}
+
 export function Settings() {
   const { t } = useI18n();
   const {
@@ -97,7 +104,7 @@ export function Settings() {
       }
     } catch (error) {
       update({ shareWithCaregiver: previous });
-      setSharingMessage(error instanceof Error ? error.message : 'Sharing could not be updated.');
+      setSharingMessage(sharingErrorMessage(error, 'Sharing could not be updated.'));
     } finally {
       setSharingBusy(false);
     }
@@ -114,7 +121,7 @@ export function Settings() {
       await approveCaregiverInvite(link);
       setCaregiverLinks((links) => links.map((item) => item.id === link.id ? { ...item, status: 'active' } : item));
     } catch (error) {
-      setSharingMessage(error instanceof Error ? error.message : 'The invitation could not be approved.');
+      setSharingMessage(sharingErrorMessage(error, 'The invitation could not be approved.'));
     } finally {
       setSharingBusy(false);
     }

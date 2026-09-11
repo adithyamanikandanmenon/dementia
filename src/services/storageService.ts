@@ -5,10 +5,10 @@
 // Falls back to localStorage if IndexedDB is unavailable.
 // ============================================================
 
-import type { AISettings, ChatConversation, EmergencyContact, FamilyMember, GameSession, MoodEntry, PatientProfile, PersonMemory, Reminder } from '@/types';
+import type { AISettings, ChatConversation, EmergencyContact, FamilyMember, GameSession, MoodEntry, PatientProfile, PendingSyncOperation, PersonMemory, Reminder } from '@/types';
 
 const DB_NAME = 'memorycare-db';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 const STORE_SESSIONS = 'gameSessions';
 const STORE_REMINDERS = 'reminders';
 const STORE_PROFILES = 'profiles';
@@ -18,6 +18,7 @@ const STORE_MOODS = 'moods';
 const STORE_PEOPLE = 'personMemories';
 const STORE_AI_SETTINGS = 'aiSettings';
 const STORE_CHATS = 'chatConversations';
+const STORE_SYNC_QUEUE = 'syncQueue';
 
 let dbPromise: Promise<IDBDatabase | null> | null = null;
 
@@ -39,7 +40,7 @@ function openDB(): Promise<IDBDatabase | null> {
         if (!db.objectStoreNames.contains(STORE_REMINDERS)) {
           db.createObjectStore(STORE_REMINDERS, { keyPath: 'id' });
         }
-        [STORE_PROFILES, STORE_FAMILY, STORE_EMERGENCY, STORE_MOODS, STORE_PEOPLE, STORE_AI_SETTINGS, STORE_CHATS].forEach((store) => {
+        [STORE_PROFILES, STORE_FAMILY, STORE_EMERGENCY, STORE_MOODS, STORE_PEOPLE, STORE_AI_SETTINGS, STORE_CHATS, STORE_SYNC_QUEUE].forEach((store) => {
           if (!db.objectStoreNames.contains(store)) db.createObjectStore(store, { keyPath: 'id' });
         });
       };
@@ -184,6 +185,11 @@ export const storageService = {
   getChatConversations: () => idbGetAll<ChatConversation>(STORE_CHATS, 'mc:chat-conversations'),
   putChatConversation: (value: ChatConversation) => idbPut<ChatConversation>(STORE_CHATS, 'mc:chat-conversations', value),
   deleteChatConversation: (id: string) => idbDelete(STORE_CHATS, 'mc:chat-conversations', id),
+
+  // Offline changes wait here until the next authenticated online sync.
+  getSyncQueue: () => idbGetAll<PendingSyncOperation>(STORE_SYNC_QUEUE, 'mc:sync-queue'),
+  putSyncOperation: (value: PendingSyncOperation) => idbPut<PendingSyncOperation>(STORE_SYNC_QUEUE, 'mc:sync-queue', value),
+  deleteSyncOperation: (id: string) => idbDelete(STORE_SYNC_QUEUE, 'mc:sync-queue', id),
 
   // Lightweight KV
   get: lsGet,

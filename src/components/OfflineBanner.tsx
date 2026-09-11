@@ -13,6 +13,12 @@ export function OfflineBanner() {
   const wasOffline = useRef(false);
 
   useEffect(() => {
+    if (online) {
+      void syncNow().then((res) => { if (res.synced > 0) showToast(`${res.synced} change${res.synced === 1 ? '' : 's'} synced.`, '✓'); });
+    }
+  }, []);
+
+  useEffect(() => {
     if (!online) {
       wasOffline.current = true;
       return;
@@ -20,7 +26,7 @@ export function OfflineBanner() {
     if (wasOffline.current) {
       wasOffline.current = false;
       syncNow().then((res) => {
-        if (res.synced >= 0) showToast(t('offline.synced'), '✓');
+        if (res.synced > 0) showToast(t('offline.synced'), '✓');
       });
     }
   }, [online, showToast, t]);

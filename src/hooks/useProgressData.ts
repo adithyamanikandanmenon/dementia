@@ -22,9 +22,17 @@ export function useProgressData() {
     try {
     let list: GameSession[];
     if (supabase && settings.activePatientId && !isGuestPatientId(settings.activePatientId)) {
-      const { data, error } = await supabase.from('game_sessions').select('id, patient_id, game_type, level, score, accuracy, attempts, completed, duration_seconds, played_at').eq('patient_id', settings.activePatientId).order('played_at', { ascending: false });
-      if (error) throw error;
-      list = (data ?? []).map((s) => ({ id: s.id, patientId: s.patient_id, gameType: s.game_type as GameSession['gameType'], level: s.level, score: s.score, accuracy: s.accuracy, attempts: s.attempts, completed: s.completed, durationSec: s.duration_seconds, timestamp: new Date(s.played_at).getTime(), synced: true }));
+      try {
+        const { data, error } = await supabase.from('game_sessions').select('id, patient_id, game_type, level, score, accuracy, attempts, completed, duration_seconds, played_at').eq('patient_id', settings.activePatientId).order('played_at', { ascending: false });
+        if (error) throw error;
+        const remote = (data ?? []).map((s) => ({ id: s.id, patientId: s.patient_id, gameType: s.game_type as GameSession['gameType'], level: s.level, score: s.score, accuracy: s.accuracy, attempts: s.attempts, completed: s.completed, durationSec: s.duration_seconds, timestamp: new Date(s.played_at).getTime(), synced: true }));
+        const localPending = (await storageService.getSessions()).filter((s) => s.patientId === settings.activePatientId && !s.synced);
+        list = [...localPending, ...remote];
+      } catch (remoteError) {
+        const cached = (await storageService.getSessions()).filter((s) => s.patientId === settings.activePatientId);
+        if (!cached.length) throw remoteError;
+        list = cached;
+      }
     } else {
       list = (await storageService.getSessions()).filter((s) => s.patientId === settings.activePatientId);
     }

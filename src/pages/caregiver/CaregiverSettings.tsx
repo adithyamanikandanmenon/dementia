@@ -6,14 +6,13 @@ import { useToast } from '@/hooks/useToast';
 import { AppHeader } from '@/components/AppHeader';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
-import { Toggle } from '@/components/Toggle';
 import { Sheet } from '@/components/Sheet';
 import { Icon } from '@/components/Icon';
 import type { LanguageCode } from '@/types';
 
 export function CaregiverSettings() {
   const { t } = useI18n();
-  const { settings, setLanguage, setRole, update } = useSettings();
+  const { settings, setLanguage, setRole } = useSettings();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [langOpen, setLangOpen] = useState(false);
@@ -53,19 +52,7 @@ export function CaregiverSettings() {
                 <p className="muted">{t('settings.privacyBody')}</p>
               </div>
             </div>
-            <div className="setting-row">
-              <div>
-                <strong>{t('settings.shareData')}</strong>
-                <div className="muted">{t('settings.shareDataDesc')}</div>
-              </div>
-              <Toggle
-                checked={settings.shareWithCaregiver}
-                onChange={(v) => update({ shareWithCaregiver: v })}
-                label={t('settings.shareData')}
-                onText={t('settings.on')}
-                offText={t('settings.off')}
-              />
-            </div>
+            <p className="muted">Patients control sharing. You can request access from the patient page, and the patient must approve before their information becomes visible.</p>
           </Card>
 
           {/* Language */}

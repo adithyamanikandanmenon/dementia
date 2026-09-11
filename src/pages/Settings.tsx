@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '@/i18n';
 import { LANGUAGES } from '@/i18n';
@@ -17,6 +17,8 @@ import { ConfirmSheet } from '@/components/ConfirmSheet';
 import { AISettingsCard } from '@/components/AISettingsCard';
 import { AI_CHAT_ENABLED } from '@/config/features';
 import type { LanguageCode, ThemePreference } from '@/types';
+import { approveCaregiverInvite, listPatientCaregiverLinks, revokeCaregiverAccess, setPatientSharing } from '@/services/sharingService';
+import type { CaregiverLink } from '@/types';
 
 export function Settings() {
   const { t } = useI18n();
@@ -41,11 +43,19 @@ export function Settings() {
   const [logoutBusy, setLogoutBusy] = useState(false);
   const [accountError, setAccountError] = useState('');
   const [clearGuestOpen, setClearGuestOpen] = useState(false);
+  const [caregiverLinks, setCaregiverLinks] = useState<CaregiverLink[]>([]);
+  const [sharingBusy, setSharingBusy] = useState(false);
+  const [sharingMessage, setSharingMessage] = useState('');
 
   const a11y = settings.accessibility;
   const overallLevel = getOverallLevel();
   const currentLang =
     LANGUAGES.find((l) => l.code === settings.language) ?? LANGUAGES[0];
+
+  useEffect(() => {
+    if (settings.role !== 'patient' || !settings.authenticated || settings.guestMode) return;
+    void listPatientCaregiverLinks().then(setCaregiverLinks).catch(() => setSharingMessage('Sharing requests could not be loaded.'));
+  }, [settings.role, settings.authenticated, settings.guestMode]);
 
   const readScreen = `${t('settings.title')}. ${t('settings.subtitle')}`;
 
@@ -71,6 +81,43 @@ export function Settings() {
     update({ emergencyContact: contactDraft.trim() || settings.emergencyContact });
     setContactOpen(false);
     showToast(t('common.save'), '✓');
+  };
+
+  const changeSharing = async (enabled: boolean) => {
+    const previous = settings.shareWithCaregiver;
+    update({ shareWithCaregiver: enabled });
+    if (!settings.activePatientId || settings.guestMode) return;
+    setSharingBusy(true);
+    setSharingMessage('');
+    try {
+      await setPatientSharing(settings.activePatientId, enabled);
+      if (!enabled) {
+        await Promise.all(caregiverLinks.filter((link) => link.status !== 'revoked').map((link) => revokeCaregiverAccess(link)));
+        setCaregiverLinks((links) => links.map((link) => ({ ...link, status: 'revoked' })));
+      }
+    } catch (error) {
+      update({ shareWithCaregiver: previous });
+      setSharingMessage(error instanceof Error ? error.message : 'Sharing could not be updated.');
+    } finally {
+      setSharingBusy(false);
+    }
+  };
+
+  const approveInvite = async (link: CaregiverLink) => {
+    if (!settings.shareWithCaregiver) {
+      setSharingMessage('Turn on sharing before approving an invitation.');
+      return;
+    }
+    setSharingBusy(true);
+    setSharingMessage('');
+    try {
+      await approveCaregiverInvite(link);
+      setCaregiverLinks((links) => links.map((item) => item.id === link.id ? { ...item, status: 'active' } : item));
+    } catch (error) {
+      setSharingMessage(error instanceof Error ? error.message : 'The invitation could not be approved.');
+    } finally {
+      setSharingBusy(false);
+    }
   };
 
   const openCaregiver = () => {
@@ -340,7 +387,7 @@ export function Settings() {
           </Card>
 
           {/* Privacy & sharing */}
-          <Card variant="tint" padLg>
+          {settings.role === 'patient' && <Card variant="tint" padLg>
             <div className="row" style={{ gap: '0.6rem', marginBottom: '0.5rem' }}>
               <Icon name="shield" size={22} />
               <div>
@@ -355,13 +402,25 @@ export function Settings() {
               </div>
               <Toggle
                 checked={settings.shareWithCaregiver}
-                onChange={(v) => update({ shareWithCaregiver: v })}
+                onChange={(v) => void changeSharing(v)}
                 label={t('settings.shareData')}
                 onText={t('settings.on')}
                 offText={t('settings.off')}
+                disabled={sharingBusy || settings.guestMode}
               />
             </div>
-          </Card>
+            <div className="stack-sm" style={{ marginTop: '0.9rem' }}>
+              {caregiverLinks.filter((link) => link.status === 'pending').map((link) => <div className="card row-between" key={link.id}>
+                <div><strong>{link.caregiver_name}</strong><div className="muted">wants to support you</div></div>
+                <Button onClick={() => void approveInvite(link)} disabled={sharingBusy || !settings.shareWithCaregiver}>Approve</Button>
+              </div>)}
+              {caregiverLinks.filter((link) => link.status === 'active').map((link) => <div className="row-between" key={link.id}>
+                <span><strong>{link.caregiver_name}</strong><small className="muted" style={{ display: 'block' }}>Approved caregiver</small></span>
+                <Button variant="ghost" onClick={() => void revokeCaregiverAccess(link).then(() => setCaregiverLinks((links) => links.map((item) => item.id === link.id ? { ...item, status: 'revoked' } : item)))} disabled={sharingBusy}>Stop access</Button>
+              </div>)}
+              {sharingMessage && <p className="banner banner--amber" role="status">{sharingMessage}</p>}
+            </div>
+          </Card>}
 
           {/* Offline status */}
           <Card variant="tint">

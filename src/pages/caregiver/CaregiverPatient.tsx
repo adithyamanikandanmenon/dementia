@@ -6,21 +6,18 @@ import { AppHeader } from '@/components/AppHeader';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
 import { Button } from '@/components/Button';
-import { Sheet } from '@/components/Sheet';
 import { useNavigate } from 'react-router-dom';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import { createPatient, listAuthorizedPatients } from '@/services/patientService';
-import type { PatientRecord } from '@/types';
-import { ageFromDateOfBirth, dateOfBirthFromAge } from '@/utils/date';
+import { listAuthorizedPatients } from '@/services/patientService';
+import { listMyCaregiverLinks, requestCaregiverAccess } from '@/services/sharingService';
+import type { CaregiverLink, PatientRecord } from '@/types';
+import { ageFromDateOfBirth } from '@/utils/date';
 
 const GAME_LABEL: Record<string, string> = {
   'picture-pairs': 'games.picturePairs',
   'pattern-recall': 'games.patternRecall',
   'daily-routine': 'games.dailyRoutine',
 };
-
-const MIN_PATIENT_AGE = 1;
-const MAX_PATIENT_AGE = 120;
 
 function timeAgo(ts: number): string {
   const mins = Math.round((Date.now() - ts) / 60000);
@@ -37,11 +34,9 @@ export function CaregiverPatient() {
   const [patients, setPatients] = useState<PatientRecord[]>([]);
   const [patientMessage, setPatientMessage] = useState('');
   const [patientsLoading, setPatientsLoading] = useState(isSupabaseConfigured);
-  const [addOpen, setAddOpen] = useState(false);
-  const [newPatientName, setNewPatientName] = useState('');
-  const [newPatientAge, setNewPatientAge] = useState('');
-  const [newPatientNotes, setNewPatientNotes] = useState('');
-  const [addingPatient, setAddingPatient] = useState(false);
+  const [inviteIdentifier, setInviteIdentifier] = useState('');
+  const [inviteBusy, setInviteBusy] = useState(false);
+  const [caregiverLinks, setCaregiverLinks] = useState<CaregiverLink[]>([]);
   const { recentSessions } = useProgressData();
 
   useEffect(() => {
@@ -53,39 +48,24 @@ export function CaregiverPatient() {
       .finally(() => setPatientsLoading(false));
   }, []);
 
-  const openAddPatient = () => {
-    setPatientMessage('');
-    setNewPatientName('');
-    setNewPatientAge('');
-    setNewPatientNotes('');
-    setAddOpen(true);
-  };
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    void listMyCaregiverLinks().then(setCaregiverLinks).catch(() => undefined);
+  }, []);
 
-  const addPatient = async () => {
-    const name = newPatientName.trim();
-    const age = Number(newPatientAge);
-    if (!name) { setPatientMessage('Enter the patient’s name.'); return; }
-    if (!Number.isInteger(age) || age < MIN_PATIENT_AGE || age > MAX_PATIENT_AGE) {
-      setPatientMessage(`Enter an age from ${MIN_PATIENT_AGE} to ${MAX_PATIENT_AGE}.`);
-      return;
-    }
-    setAddingPatient(true);
+  const sendInvite = async () => {
+    if (!inviteIdentifier.trim()) { setPatientMessage('Enter the patient username.'); return; }
+    setInviteBusy(true);
     setPatientMessage('');
     try {
-      const created = await createPatient({
-        name,
-        date_of_birth: dateOfBirthFromAge(age),
-        notes: newPatientNotes.trim() || null,
-        share_with_caregiver: true,
-      });
-      setPatients((current) => [...current, created].sort((a, b) => a.name.localeCompare(b.name)));
-      updateActiveProfile({ id: created.id, patientName: created.name });
-      setAddOpen(false);
-      setPatientMessage(`${created.name} was added successfully.`);
+      await requestCaregiverAccess(inviteIdentifier);
+      setInviteIdentifier('');
+      setPatientMessage('Invitation sent. The patient must approve it before any information is visible.');
+      setCaregiverLinks(await listMyCaregiverLinks());
     } catch (error) {
-      setPatientMessage(error instanceof Error ? error.message : 'Unable to add this patient. Please try again.');
+      setPatientMessage(error instanceof Error ? error.message : 'Unable to send this invitation. Please try again.');
     } finally {
-      setAddingPatient(false);
+      setInviteBusy(false);
     }
   };
 
@@ -99,11 +79,17 @@ export function CaregiverPatient() {
         <div className="stack-lg">
           {isSupabaseConfigured && <Card>
             <div className="row-between patient-list-heading">
-              <div><h2 className="card-title">Choose patient</h2><p className="muted">Only patients linked to this account are shown.</p></div>
-              <Button type="button" variant="secondary" icon="plus" onClick={openAddPatient}>Add Patient</Button>
+              <div><h2 className="card-title">Choose patient</h2><p className="muted">Only patients who approved access are shown.</p></div>
             </div>
-            {patientsLoading ? <p className="muted" role="status">Loading patients…</p> : patients.length === 0 ? <div className="patient-empty stack-sm"><p className="muted">No patients yet.</p><Button type="button" variant="ghost" onClick={openAddPatient}>Add your first patient</Button></div> : patients.map((candidate) => <button type="button" className="link-row" key={candidate.id} onClick={() => updateActiveProfile({ id: candidate.id, patientName: candidate.name })}><div><strong>{candidate.name}</strong><div className="muted">{candidate.id === settings.activePatientId ? 'Current patient' : 'Select patient'}{ageFromDateOfBirth(candidate.date_of_birth) !== null ? ` · Age ${ageFromDateOfBirth(candidate.date_of_birth)}` : ''}</div></div><Icon name="chevron-right" size={20} /></button>)}
+            {patientsLoading ? <p className="muted" role="status">Loading patients…</p> : patients.length === 0 ? <div className="patient-empty"><p className="muted">No approved patients yet.</p></div> : patients.map((candidate) => <button type="button" className="link-row" key={candidate.id} onClick={() => updateActiveProfile({ id: candidate.id, patientName: candidate.name })}><div><strong>{candidate.name}</strong><div className="muted">{candidate.id === settings.activePatientId ? 'Current patient' : 'Select patient'}{ageFromDateOfBirth(candidate.date_of_birth) !== null ? ` · Age ${ageFromDateOfBirth(candidate.date_of_birth)}` : ''}</div></div><Icon name="chevron-right" size={20} /></button>)}
             {patientMessage && <p className="muted" role="status">{patientMessage}</p>}
+          </Card>}
+          {isSupabaseConfigured && <Card variant="tint" padLg>
+            <h2 className="card-title">Invite a patient</h2>
+            <p className="muted">Enter the patient’s Smriti username. They must approve before you can view anything.</p>
+            <div className="field"><label className="field__label" htmlFor="patient-username">Patient username</label><input id="patient-username" className="input" value={inviteIdentifier} onChange={(event) => setInviteIdentifier(event.target.value)} autoCapitalize="none" /></div>
+            <Button block onClick={() => void sendInvite()} disabled={inviteBusy}>{inviteBusy ? 'Sending…' : 'Send invitation'}</Button>
+            {caregiverLinks.filter((link) => link.status === 'pending').map((link) => <p className="muted" role="status" key={link.id}>Waiting for {link.patient_name} to approve.</p>)}
           </Card>}
           <div>
             <h1 className="page-title">{t('caregiver.patientProfile')}</h1>
@@ -182,14 +168,6 @@ export function CaregiverPatient() {
           <p className="disclaimer">{t('caregiver.trendDisclaimer')}</p>
         </div>
       </main>
-      <Sheet open={addOpen} title="Add Patient" onClose={() => { if (!addingPatient) setAddOpen(false); }}>
-        <form className="stack" onSubmit={(event) => { event.preventDefault(); void addPatient(); }}>
-          <div className="field"><label className="field__label" htmlFor="new-patient-name">Patient name</label><input id="new-patient-name" className="input" value={newPatientName} onChange={(event) => setNewPatientName(event.target.value)} autoComplete="name" autoFocus /></div>
-          <div className="field"><label className="field__label" htmlFor="new-patient-age">Age</label><input id="new-patient-age" className="input" value={newPatientAge} onChange={(event) => setNewPatientAge(event.target.value.replace(/\D/g, '').slice(0, 3))} type="number" inputMode="numeric" min={MIN_PATIENT_AGE} max={MAX_PATIENT_AGE} step="1" placeholder={`${MIN_PATIENT_AGE}–${MAX_PATIENT_AGE}`} required /><small className="muted">Use a whole number from {MIN_PATIENT_AGE} to {MAX_PATIENT_AGE}. We store the calculated date of birth.</small></div>
-          <div className="field"><label className="field__label" htmlFor="new-patient-notes">Notes (optional)</label><textarea id="new-patient-notes" className="input" value={newPatientNotes} onChange={(event) => setNewPatientNotes(event.target.value)} /></div>
-          <div className="sheet-actions"><Button type="button" variant="ghost" onClick={() => setAddOpen(false)} disabled={addingPatient}>Cancel</Button><Button type="submit" icon="check" disabled={addingPatient}>{addingPatient ? 'Adding…' : 'Add Patient'}</Button></div>
-        </form>
-      </Sheet>
     </>
   );
 }

@@ -12,6 +12,7 @@ import type { CognitiveCategory, GameSession, GameType, LevelMap, StandardGameSe
 import { storageService } from './storageService';
 import { supabase } from '@/lib/supabase';
 import { isGuestPatientId } from './guestService';
+import { touchPatientSync } from './sharingService';
 
 export const MIN_LEVEL = 1;
 export const MAX_LEVEL = 5;
@@ -125,22 +126,30 @@ export async function recordStandardSession(input: Omit<StandardGameSession, 'id
   const legacy: Omit<GameSession, 'id' | 'timestamp' | 'synced'> = {
     patientId: input.patientId, gameType: input.gameType, level: input.difficulty, score: input.score,
     accuracy: input.accuracy, attempts: input.attempts, completed: input.completed,
-    durationSec: Math.round(input.responseTimeMs / 1000),
+    durationSec: Math.round(input.responseTimeMs / 1000), category: input.category,
+    difficulty: input.difficulty, mistakes: input.mistakes, responseTimeMs: input.responseTimeMs,
+    metrics: input.metrics,
   };
-  await recordSession(legacy);
+  const localSession = await recordSession(legacy);
   if (!supabase || isGuestPatientId(input.patientId)) return session;
-  const game = GAME_DEFINITIONS[input.gameType];
-  const { data: gameRow, error: gameError } = await supabase.from('games').select('id').eq('slug', game.slug).single();
-  if (gameError) throw gameError;
-  const { data, error } = await supabase.from('game_sessions').insert({
-    patient_id: input.patientId, game_id: gameRow.id, game_type: input.gameType, category: input.category,
-    level: input.difficulty, score: input.score, accuracy: input.accuracy, attempts: input.attempts,
-    mistakes: input.mistakes, response_time_ms: input.responseTimeMs, completed: input.completed,
-    duration_seconds: Math.round(input.responseTimeMs / 1000),
-  }).select('id').single();
-  if (error) throw error;
-  const metrics = Object.entries(input.metrics).map(([metric_name, value]) => ({ session_id: data.id, metric_name, metric_value: typeof value === 'number' ? value : 0, metric_text: typeof value === 'string' ? value : null }));
-  if (metrics.length) { const { error: metricsError } = await supabase.from('game_metrics').insert(metrics); if (metricsError) throw metricsError; }
+  try {
+    const game = GAME_DEFINITIONS[input.gameType];
+    const { data: gameRow, error: gameError } = await supabase.from('games').select('id').eq('slug', game.slug).single();
+    if (gameError) throw gameError;
+    const { data, error } = await supabase.from('game_sessions').upsert({
+      patient_id: input.patientId, game_id: gameRow.id, game_type: input.gameType, category: input.category,
+      level: input.difficulty, score: input.score, accuracy: input.accuracy, attempts: input.attempts,
+      mistakes: input.mistakes, response_time_ms: input.responseTimeMs, completed: input.completed,
+      duration_seconds: Math.round(input.responseTimeMs / 1000), client_id: localSession.id,
+    }, { onConflict: 'patient_id,client_id' }).select('id').single();
+    if (error) throw error;
+    const metrics = Object.entries(input.metrics).map(([metric_name, value]) => ({ session_id: data.id, metric_name, metric_value: typeof value === 'number' ? value : 0, metric_text: typeof value === 'string' ? value : null }));
+    if (metrics.length) { const { error: metricsError } = await supabase.from('game_metrics').upsert(metrics, { onConflict: 'session_id,metric_name' }); if (metricsError) throw metricsError; }
+    await storageService.putSession({ ...localSession, synced: true });
+    await touchPatientSync(input.patientId).catch(() => undefined);
+  } catch {
+    // The local copy is the source of truth until connectivity/auth is restored.
+  }
   return session;
 }
 

@@ -101,7 +101,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       if (!isLive() || syncId !== authSyncId.current) return false;
       setSettings((s) => {
         const active = patients.find((patient) => patient.id === s.activePatientId) ?? patients[0];
-        return { ...s, authenticated: true, guestMode: false, onboarded: true, needsRoleSelection: context.needsRoleSelection, role: context.role, language: context.language || s.language, userName: context.displayName, caregiverName: context.role === 'caregiver' ? context.displayName : s.caregiverName, activePatientId: active?.id ?? s.activePatientId, patientName: active?.name ?? s.patientName, activeProfile: active ? { id: active.id, patientName: active.name, caregiverName: context.role === 'caregiver' ? context.displayName : s.caregiverName, role: context.role } : s.activeProfile };
+        return { ...s, authenticated: true, guestMode: false, onboarded: true, needsRoleSelection: context.needsRoleSelection, role: context.role, language: context.language || s.language, userName: context.displayName, caregiverName: context.role === 'caregiver' ? context.displayName : s.caregiverName, activePatientId: active?.id ?? s.activePatientId, patientName: active?.name ?? s.patientName, shareWithCaregiver: context.role === 'patient' ? (active?.share_with_caregiver ?? s.shareWithCaregiver) : s.shareWithCaregiver, activeProfile: active ? { id: active.id, patientName: active.name, caregiverName: context.role === 'caregiver' ? context.displayName : s.caregiverName, role: context.role } : s.activeProfile };
       });
       return true;
     } catch (error) {

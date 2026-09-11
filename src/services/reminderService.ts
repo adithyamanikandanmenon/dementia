@@ -3,11 +3,12 @@
 // CRUD + default seed + time helpers. Persists via storageService.
 // ============================================================
 
-import type { Reminder } from '@/types';
+import type { PendingSyncOperation, Reminder } from '@/types';
 import { storageService } from './storageService';
 import { localDateKey } from '@/utils/date';
 import { supabase } from '@/lib/supabase';
 import { isGuestPatientId } from './guestService';
+import { touchPatientSync } from './sharingService';
 
 function id(): string {
   return `r_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -15,6 +16,22 @@ function id(): string {
 
 function guestId(): string {
   return `guest-reminder-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function queueId(kind: PendingSyncOperation['kind'], id: string) {
+  return `${kind}:${id}`;
+}
+
+async function queue(kind: PendingSyncOperation['kind'], reminder: Reminder, payload: unknown) {
+  await storageService.putSyncOperation({ id: queueId(kind, reminder.id), kind, patientId: reminder.patientId, payload, createdAt: Date.now() });
+}
+
+function localReminder(data: Omit<Reminder, 'id' | 'completed' | 'createdAt'>, reminderId = id()): Reminder {
+  return { ...data, id: reminderId, completed: false, createdAt: Date.now(), syncPending: true };
+}
+
+function fromCloud(row: any): Reminder {
+  return { id: row.id, patientId: row.patient_id, title: row.title, detail: row.detail, icon: row.icon, time: String(row.time_local).slice(0, 5), category: row.category, completed: Boolean(row.reminder_completions?.some((c: { completed_on: string }) => c.completed_on === localDateKey())), recurring: row.recurring, repeatDays: row.repeat_days, enabled: row.enabled, completionDates: row.reminder_completions?.map((c: { completed_on: string }) => c.completed_on), createdAt: new Date(row.created_at).getTime(), scheduledDate: row.scheduled_date ?? undefined, syncPending: false };
 }
 
 /** Default gentle daily reminders (created on first run only). */
@@ -74,9 +91,16 @@ export function defaultReminders(patientId = ''): Reminder[] {
 
 export async function loadReminders(patientId?: string): Promise<Reminder[]> {
   if (supabase && patientId && !isGuestPatientId(patientId)) {
-    const { data, error } = await supabase.from('reminders').select('*, reminder_completions(completed_on, completed_at)').eq('patient_id', patientId).order('time_local');
-    if (error) throw error;
-    return (data ?? []).map((row) => ({ id: row.id, patientId: row.patient_id, title: row.title, detail: row.detail, icon: row.icon, time: String(row.time_local).slice(0, 5), category: row.category, completed: Boolean(row.reminder_completions?.some((c: { completed_on: string }) => c.completed_on === localDateKey())), recurring: row.recurring, repeatDays: row.repeat_days, enabled: row.enabled, completionDates: row.reminder_completions?.map((c: { completed_on: string }) => c.completed_on), createdAt: new Date(row.created_at).getTime(), scheduledDate: row.scheduled_date ?? undefined }));
+    try {
+      const { data, error } = await supabase.from('reminders').select('*, reminder_completions(completed_on, completed_at)').eq('patient_id', patientId).order('time_local');
+      if (error) throw error;
+      const reminders = (data ?? []).map(fromCloud);
+      await Promise.all(reminders.map((reminder) => storageService.putReminder(reminder)));
+      return reminders;
+    } catch {
+      const cached = await storageService.getReminders();
+      return sortReminders(cached.filter((r) => r.patientId === patientId));
+    }
   }
   const list = await storageService.getReminders();
   return sortReminders(patientId ? list.filter((r) => r.patientId === patientId) : list);
@@ -90,9 +114,18 @@ export async function addReminder(
   data: Omit<Reminder, 'id' | 'completed' | 'createdAt'>,
 ): Promise<Reminder> {
   if (supabase && !isGuestPatientId(data.patientId)) {
-    const { data: row, error } = await supabase.from('reminders').insert({ patient_id: data.patientId, title: data.title, detail: data.detail, icon: data.icon, time_local: data.time, category: data.category, recurring: data.recurring, repeat_days: data.repeatDays ?? [], enabled: data.enabled ?? true, scheduled_date: data.scheduledDate ?? null }).select().single();
-    if (error) throw error;
-    return { ...data, id: row.id, completed: false, createdAt: new Date(row.created_at).getTime() };
+    if (navigator.onLine) {
+      try {
+        const { data: row, error } = await supabase.from('reminders').insert({ patient_id: data.patientId, title: data.title, detail: data.detail, icon: data.icon, time_local: data.time, category: data.category, recurring: data.recurring, repeat_days: data.repeatDays ?? [], enabled: data.enabled ?? true, scheduled_date: data.scheduledDate ?? null }).select().single();
+        if (error) throw error;
+        const reminder = { ...data, id: row.id, completed: false, createdAt: new Date(row.created_at).getTime(), syncPending: false };
+        await storageService.putReminder(reminder);
+        await touchPatientSync(data.patientId).catch(() => undefined);
+        return reminder;
+      } catch { /* fall through to the offline queue */ }
+    }
+    const reminder = localReminder(data);
+    await storageService.putReminder(reminder); await queue('reminder-upsert', reminder, reminder); return reminder;
   }
   const reminder: Reminder = {
     ...data,
@@ -106,9 +139,14 @@ export async function addReminder(
 
 export async function updateReminder(r: Reminder): Promise<void> {
   if (supabase && !isGuestPatientId(r.patientId)) {
-    const { error } = await supabase.from('reminders').update({ title: r.title, detail: r.detail, icon: r.icon, time_local: r.time, category: r.category, recurring: r.recurring, repeat_days: r.repeatDays ?? [], enabled: r.enabled ?? true, scheduled_date: r.scheduledDate ?? null }).eq('id', r.id);
-    if (error) throw error;
-    return;
+    if (navigator.onLine) {
+      try {
+        const { error } = await supabase.from('reminders').update({ title: r.title, detail: r.detail, icon: r.icon, time_local: r.time, category: r.category, recurring: r.recurring, repeat_days: r.repeatDays ?? [], enabled: r.enabled ?? true, scheduled_date: r.scheduledDate ?? null }).eq('id', r.id);
+        if (error) throw error;
+        await storageService.putReminder({ ...r, syncPending: false }); await touchPatientSync(r.patientId).catch(() => undefined); return;
+      } catch { /* fall through to the offline queue */ }
+    }
+    const pending = { ...r, syncPending: true }; await storageService.putReminder(pending); await queue('reminder-upsert', pending, pending); return;
   }
   await storageService.putReminder(r);
 }
@@ -117,9 +155,15 @@ export async function toggleReminder(r: Reminder): Promise<Reminder> {
   const date = localDateKey();
   const complete = !isCompleteForDate(r, date);
   if (supabase && !isGuestPatientId(r.patientId)) {
-    if (complete) { const { error } = await supabase.from('reminder_completions').upsert({ reminder_id: r.id, completed_on: date }); if (error) throw error; }
-    else { const { error } = await supabase.from('reminder_completions').delete().eq('reminder_id', r.id).eq('completed_on', date); if (error) throw error; }
-    return { ...r, completed: complete, completedAt: complete ? Date.now() : undefined, completionDates: complete ? [...new Set([...(r.completionDates ?? []), date])] : (r.completionDates ?? []).filter((d) => d !== date) };
+    const updated = { ...r, completed: complete, completedAt: complete ? Date.now() : undefined, completionDates: complete ? [...new Set([...(r.completionDates ?? []), date])] : (r.completionDates ?? []).filter((d) => d !== date), syncPending: false };
+    if (navigator.onLine) {
+      try {
+        if (complete) { const { error } = await supabase.from('reminder_completions').upsert({ reminder_id: r.id, completed_on: date }); if (error) throw error; }
+        else { const { error } = await supabase.from('reminder_completions').delete().eq('reminder_id', r.id).eq('completed_on', date); if (error) throw error; }
+        await storageService.putReminder(updated); await touchPatientSync(r.patientId).catch(() => undefined); return updated;
+      } catch { /* fall through to the offline queue */ }
+    }
+    const pending = { ...updated, syncPending: true }; await storageService.putReminder(pending); await queue('reminder-completion', pending, { reminderId: r.id, date, complete }); return pending;
   }
   const updated: Reminder = {
     ...r,
@@ -150,7 +194,12 @@ export function reminderStatus(r: Reminder, now = new Date()): 'upcoming' | 'due
 }
 
 export async function removeReminder(rid: string): Promise<void> {
-  if (supabase && !rid.startsWith('guest-reminder-')) { const { error } = await supabase.from('reminders').delete().eq('id', rid); if (error) throw error; return; }
+  if (supabase && !rid.startsWith('guest-reminder-')) {
+    const cached = (await storageService.getReminders()).find((reminder) => reminder.id === rid);
+    if (navigator.onLine) { try { const { error } = await supabase.from('reminders').delete().eq('id', rid); if (error) throw error; await storageService.deleteReminder(rid); return; } catch { /* fall through to the offline queue */ } }
+    if (cached) await queue('reminder-delete', cached, { id: rid });
+    await storageService.deleteReminder(rid); return;
+  }
   await storageService.deleteReminder(rid);
 }
 

@@ -44,6 +44,18 @@ export interface PatientRecord {
   notes?: string | null;
   interests?: string | null;
   share_with_caregiver: boolean;
+  updated_at?: string;
+}
+
+export interface CaregiverLink {
+  id: string;
+  caregiver_id: string;
+  patient_id: string;
+  caregiver_name: string;
+  patient_name: string;
+  status: 'pending' | 'active' | 'revoked';
+  created_at: string;
+  updated_at: string;
 }
 
 export type PersonRelationship = 'family' | 'friend' | 'caregiver' | 'clinician' | 'other';
@@ -57,6 +69,7 @@ export interface PersonMemory {
   photo_paths?: string[] | null;
   notes?: string | null;
   voice_recording_path?: string | null;
+  syncPending?: boolean;
 }
 
 /** The one profile currently in use on this device. */
@@ -159,6 +172,12 @@ export interface GameSession {
   durationSec: number;
   timestamp: number; // epoch ms
   synced: boolean;
+  category?: CognitiveCategory;
+  difficulty?: number;
+  mistakes?: number;
+  responseTimeMs?: number;
+  metrics?: Record<string, number | string | boolean>;
+  clientId?: string;
 }
 
 export interface Reminder {
@@ -178,6 +197,17 @@ export interface Reminder {
   completionDates?: string[]; // local YYYY-MM-DD buckets
   createdAt: number;
   scheduledDate?: string;
+  syncPending?: boolean;
+}
+
+export type SyncOperationKind = 'reminder-upsert' | 'reminder-delete' | 'reminder-completion' | 'person-upsert' | 'person-delete';
+
+export interface PendingSyncOperation {
+  id: string;
+  kind: SyncOperationKind;
+  patientId: string;
+  payload: unknown;
+  createdAt: number;
 }
 
 export interface EmergencyContactRecord { id: string; patient_id: string; name: string; phone: string; priority: number; }

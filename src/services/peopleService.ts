@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import type { PersonMemory } from '@/types';
 import { isGuestPatientId } from './guestService';
 import { storageService } from './storageService';
+import { touchPatientSync } from './sharingService';
 
 const bucket = 'patient-media';
 export const MAX_FAMILY_MEMBERS = 5;
@@ -30,19 +31,40 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
+async function saveOfflinePerson(person: Partial<PersonMemory> & Pick<PersonMemory, 'patient_id' | 'name'>, selectedPhotos: File[], previousPhotoPaths: string[]) {
+  const photo_paths = selectedPhotos.length > 0 ? await Promise.all(selectedPhotos.map(fileToDataUrl)) : previousPhotoPaths;
+  const localPerson: PersonMemory = {
+    id: person.id ?? `offline-person-${crypto.randomUUID()}`,
+    patient_id: person.patient_id,
+    name: person.name.trim(), relationship: person.relationship ?? 'other', nickname: person.nickname ?? null,
+    photo_path: photo_paths[0] ?? null, photo_paths, notes: person.notes ?? null,
+    voice_recording_path: null, syncPending: true,
+  };
+  await storageService.putPersonMemory(localPerson);
+  await storageService.putSyncOperation({ id: `person-upsert:${localPerson.id}`, kind: 'person-upsert', patientId: localPerson.patient_id, payload: localPerson, createdAt: Date.now() });
+  return localPerson;
+}
+
 export async function listPeople(patientId: string, useGuestStorage = false): Promise<PersonMemory[]> {
   if (useGuestStorage || isGuestPatientId(patientId)) {
     const people = await storageService.getPersonMemories();
     return people.filter((person) => person.patient_id === patientId).sort((a, b) => a.name.localeCompare(b.name));
   }
   if (!supabase) return [];
-  let result = await supabase.from('person_memories').select('id, patient_id, name, relationship, nickname, photo_path, photo_paths, notes, voice_recording_path').eq('patient_id', patientId).order('created_at').limit(50);
-  // Keep older deployments readable until the photo_paths migration is applied.
-  if (result.error && /photo_paths|column/i.test(result.error.message)) {
-    result = await supabase.from('person_memories').select('id, patient_id, name, relationship, nickname, photo_path, notes, voice_recording_path').eq('patient_id', patientId).order('created_at').limit(50) as typeof result;
+  try {
+    let result = await supabase.from('person_memories').select('id, patient_id, name, relationship, nickname, photo_path, photo_paths, notes, voice_recording_path').eq('patient_id', patientId).order('created_at').limit(50);
+    // Keep older deployments readable until the photo_paths migration is applied.
+    if (result.error && /photo_paths|column/i.test(result.error.message)) {
+      result = await supabase.from('person_memories').select('id, patient_id, name, relationship, nickname, photo_path, notes, voice_recording_path').eq('patient_id', patientId).order('created_at').limit(50) as typeof result;
+    }
+    if (result.error) throw result.error;
+    const people = (result.data ?? []).map((person) => normalizePerson(person as PersonMemory));
+    await Promise.all(people.map((person) => storageService.putPersonMemory({ ...person, syncPending: false })));
+    return people;
+  } catch {
+    const cached = await storageService.getPersonMemories();
+    return cached.filter((person) => person.patient_id === patientId).sort((a, b) => a.name.localeCompare(b.name));
   }
-  if (result.error) throw result.error;
-  return (result.data ?? []).map((person) => normalizePerson(person as PersonMemory));
 }
 
 export async function savePerson(person: Partial<PersonMemory> & Pick<PersonMemory, 'patient_id' | 'name'>, photos: File[] = [], voice?: File | null, useGuestStorage = false) {
@@ -68,8 +90,9 @@ export async function savePerson(person: Partial<PersonMemory> & Pick<PersonMemo
     await storageService.putPersonMemory(localPerson);
     return localPerson;
   }
-  if (!supabase) throw new Error('Supabase is not configured.');
+  if (!supabase || (typeof navigator !== 'undefined' && !navigator.onLine)) return saveOfflinePerson(person, selectedPhotos, previousPhotoPaths);
   const client = supabase;
+  try {
   const id = person.id ?? crypto.randomUUID();
   const optimisePhoto = async (file: File) => {
     if (!file.type.startsWith('image/') || file.size <= 900_000) return file;
@@ -101,7 +124,13 @@ export async function savePerson(person: Partial<PersonMemory> & Pick<PersonMemo
   if (selectedPhotos.length > 0 && previousPhotoPaths.length > 0) {
     await client.storage.from(bucket).remove(previousPhotoPaths).catch(() => undefined);
   }
-  return normalizePerson(result.data as PersonMemory);
+  const saved = normalizePerson(result.data as PersonMemory);
+  await storageService.putPersonMemory({ ...saved, syncPending: false });
+  await touchPatientSync(person.patient_id).catch(() => undefined);
+  return saved;
+  } catch {
+    return saveOfflinePerson(person, selectedPhotos, previousPhotoPaths);
+  }
 }
 
 export async function removePerson(id: string, useGuestStorage = false) {
@@ -110,8 +139,12 @@ export async function removePerson(id: string, useGuestStorage = false) {
     return;
   }
   if (!supabase) throw new Error('Supabase is not configured.');
-  const { error } = await supabase.from('person_memories').delete().eq('id', id);
-  if (error) throw error;
+  const cached = (await storageService.getPersonMemories()).find((person) => person.id === id);
+  if (typeof navigator !== 'undefined' && navigator.onLine) {
+    try { const { error } = await supabase.from('person_memories').delete().eq('id', id); if (error) throw error; await storageService.deletePersonMemory(id); if (cached) await touchPatientSync(cached.patient_id).catch(() => undefined); return; } catch { /* fall through to the offline queue */ }
+  }
+  if (cached) await storageService.putSyncOperation({ id: `person-delete:${id}`, kind: 'person-delete', patientId: cached.patient_id, payload: { id }, createdAt: Date.now() });
+  await storageService.deletePersonMemory(id);
 }
 
 export async function personPhotoUrl(path: string | null, useGuestStorage = false) {

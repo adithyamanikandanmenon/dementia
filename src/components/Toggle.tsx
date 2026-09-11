@@ -6,10 +6,11 @@ interface ToggleProps {
   label: string;
   onText?: string;
   offText?: string;
+  disabled?: boolean;
 }
 
 /** Large, accessible on/off switch. */
-export function Toggle({ checked, onChange, label, onText, offText }: ToggleProps) {
+export function Toggle({ checked, onChange, label, onText, offText, disabled }: ToggleProps) {
   return (
     <button
       type="button"
@@ -18,6 +19,7 @@ export function Toggle({ checked, onChange, label, onText, offText }: ToggleProp
       aria-label={`${label}: ${checked ? onText ?? 'On' : offText ?? 'Off'}`}
       className="switch"
       onClick={() => onChange(!checked)}
+      disabled={disabled}
     >
       <span className="switch__track" aria-hidden="true">
         <span className="switch__thumb">

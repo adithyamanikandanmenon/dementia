@@ -92,7 +92,9 @@ export async function ensureCurrentUserPatient(name: string): Promise<PatientRec
 
 export async function listAuthorizedPatients() {
   if (!supabase) return [] as PatientRecord[];
-  const { data, error } = await supabase.from('patients').select('*').order('name');
+  // Never include the private patient-to-caregiver connection code in the
+  // caregiver's normal patient list response.
+  const { data, error } = await supabase.from('patients').select('id, auth_user_id, name, profile_photo_path, date_of_birth, notes, interests, share_with_caregiver, updated_at').order('name');
   if (error) throw error;
   return (data ?? []) as PatientRecord[];
 }

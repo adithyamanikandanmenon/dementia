@@ -17,7 +17,7 @@ import { ConfirmSheet } from '@/components/ConfirmSheet';
 import { AISettingsCard } from '@/components/AISettingsCard';
 import { AI_CHAT_ENABLED } from '@/config/features';
 import type { LanguageCode, ThemePreference } from '@/types';
-import { approveCaregiverInvite, listPatientCaregiverLinks, revokeCaregiverAccess, setPatientSharing } from '@/services/sharingService';
+import { approveCaregiverInvite, getPatientShareCode, listPatientCaregiverLinks, revokeCaregiverAccess, setPatientSharing } from '@/services/sharingService';
 import type { CaregiverLink } from '@/types';
 
 function sharingErrorMessage(error: unknown, fallback: string) {
@@ -53,6 +53,8 @@ export function Settings() {
   const [caregiverLinks, setCaregiverLinks] = useState<CaregiverLink[]>([]);
   const [sharingBusy, setSharingBusy] = useState(false);
   const [sharingMessage, setSharingMessage] = useState('');
+  const [shareCode, setShareCode] = useState('');
+  const [shareCodeLoading, setShareCodeLoading] = useState(false);
 
   const a11y = settings.accessibility;
   const overallLevel = getOverallLevel();
@@ -62,7 +64,11 @@ export function Settings() {
   useEffect(() => {
     if (settings.role !== 'patient' || !settings.authenticated || settings.guestMode) return;
     void listPatientCaregiverLinks().then(setCaregiverLinks).catch(() => setSharingMessage('Sharing requests could not be loaded.'));
-  }, [settings.role, settings.authenticated, settings.guestMode]);
+    if (settings.activePatientId) {
+      setShareCodeLoading(true);
+      void getPatientShareCode().then(setShareCode).catch(() => setSharingMessage('Your connection code could not be loaded.')).finally(() => setShareCodeLoading(false));
+    }
+  }, [settings.role, settings.authenticated, settings.guestMode, settings.activePatientId]);
 
   const readScreen = `${t('settings.title')}. ${t('settings.subtitle')}`;
 
@@ -124,6 +130,16 @@ export function Settings() {
       setSharingMessage(sharingErrorMessage(error, 'The invitation could not be approved.'));
     } finally {
       setSharingBusy(false);
+    }
+  };
+
+  const copyShareCode = async () => {
+    if (!shareCode) return;
+    try {
+      await navigator.clipboard.writeText(shareCode);
+      showToast('Connection code copied.', '✓');
+    } catch {
+      showToast(`Your connection code is ${shareCode}.`, '🔐');
     }
   };
 
@@ -415,6 +431,14 @@ export function Settings() {
                 offText={t('settings.off')}
                 disabled={sharingBusy || settings.guestMode}
               />
+            </div>
+            <div className="card" style={{ marginTop: '0.9rem' }}>
+              <strong>Patient connection code</strong>
+              <p className="muted">Give this code only to the caregiver you choose. They must enter it and you must approve their request.</p>
+              <div className="row-between" style={{ marginTop: '0.65rem', gap: '0.75rem' }}>
+                <code style={{ fontSize: '1.35rem', letterSpacing: '0.16em', fontWeight: 800 }}>{shareCodeLoading ? 'Loading…' : shareCode || 'Unavailable'}</code>
+                <Button variant="secondary" onClick={() => void copyShareCode()} disabled={shareCodeLoading || !shareCode}>Copy code</Button>
+              </div>
             </div>
             <div className="stack-sm" style={{ marginTop: '0.9rem' }}>
               {caregiverLinks.filter((link) => link.status === 'pending').map((link) => <div className="card row-between" key={link.id}>

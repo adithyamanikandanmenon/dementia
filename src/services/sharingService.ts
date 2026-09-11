@@ -26,6 +26,19 @@ export async function requestCaregiverAccess(identifier: string): Promise<void> 
   if (error) throw error;
 }
 
+export async function requestCaregiverAccessByCode(code: string): Promise<void> {
+  const { error } = await requireClient().rpc('request_caregiver_access_by_code', {
+    connection_code: code.trim().toUpperCase(),
+  });
+  if (error) throw error;
+}
+
+export async function getPatientShareCode(): Promise<string> {
+  const { data, error } = await requireClient().rpc('get_patient_share_code');
+  if (error) throw error;
+  return String(data ?? '');
+}
+
 export async function listPatientCaregiverLinks(): Promise<CaregiverLink[]> {
   const { data, error } = await requireClient().rpc('list_patient_caregiver_links');
   if (error) throw error;

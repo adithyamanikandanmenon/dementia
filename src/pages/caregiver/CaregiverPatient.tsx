@@ -9,7 +9,7 @@ import { Button } from '@/components/Button';
 import { useNavigate } from 'react-router-dom';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { listAuthorizedPatients } from '@/services/patientService';
-import { listMyCaregiverLinks, requestCaregiverAccess } from '@/services/sharingService';
+import { listMyCaregiverLinks, requestCaregiverAccessByCode } from '@/services/sharingService';
 import type { CaregiverLink, PatientRecord } from '@/types';
 import { ageFromDateOfBirth } from '@/utils/date';
 
@@ -34,7 +34,7 @@ export function CaregiverPatient() {
   const [patients, setPatients] = useState<PatientRecord[]>([]);
   const [patientMessage, setPatientMessage] = useState('');
   const [patientsLoading, setPatientsLoading] = useState(isSupabaseConfigured);
-  const [inviteIdentifier, setInviteIdentifier] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [inviteBusy, setInviteBusy] = useState(false);
   const [caregiverLinks, setCaregiverLinks] = useState<CaregiverLink[]>([]);
   const { recentSessions } = useProgressData();
@@ -54,12 +54,12 @@ export function CaregiverPatient() {
   }, []);
 
   const sendInvite = async () => {
-    if (!inviteIdentifier.trim()) { setPatientMessage('Enter the patient username.'); return; }
+    if (!inviteCode.trim()) { setPatientMessage('Enter the patient connection code.'); return; }
     setInviteBusy(true);
     setPatientMessage('');
     try {
-      await requestCaregiverAccess(inviteIdentifier);
-      setInviteIdentifier('');
+      await requestCaregiverAccessByCode(inviteCode);
+      setInviteCode('');
       setPatientMessage('Invitation sent. The patient must approve it before any information is visible.');
       setCaregiverLinks(await listMyCaregiverLinks());
     } catch (error) {
@@ -86,8 +86,8 @@ export function CaregiverPatient() {
           </Card>}
           {isSupabaseConfigured && <Card variant="tint" padLg>
             <h2 className="card-title">Invite a patient</h2>
-            <p className="muted">Enter the patient’s Smriti username. They must approve before you can view anything.</p>
-            <div className="field"><label className="field__label" htmlFor="patient-username">Patient username</label><input id="patient-username" className="input" value={inviteIdentifier} onChange={(event) => setInviteIdentifier(event.target.value)} autoCapitalize="none" /></div>
+            <p className="muted">Ask the patient for their connection code. They must approve before you can view anything.</p>
+            <div className="field"><label className="field__label" htmlFor="patient-connection-code">Patient connection code</label><input id="patient-connection-code" className="input" value={inviteCode} onChange={(event) => setInviteCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))} autoCapitalize="characters" autoComplete="off" /></div>
             <Button block onClick={() => void sendInvite()} disabled={inviteBusy}>{inviteBusy ? 'Sending…' : 'Send invitation'}</Button>
             {caregiverLinks.filter((link) => link.status === 'pending').map((link) => <p className="muted" role="status" key={link.id}>Waiting for {link.patient_name} to approve.</p>)}
           </Card>}

@@ -99,7 +99,7 @@ export function GamePlay() {
         onBack={() => navigate('/games')}
         readText={t(INSTRUCTION_KEY[gameType])}
       />
-      <main className="page page--flow" style={{ paddingBottom: '3rem' }}>
+      <main className="page game-page">
         {view === 'playing' ? (
           <>
             <div className="row-between">
